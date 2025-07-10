@@ -12,6 +12,8 @@ stg-init:
 stg-apply: ## apply
 	make stg-init
 	cd project/network && terraform apply -auto-approve -var-file=../terraform.stg.tfvars
+	cd project/rds1 && terraform apply -auto-approve -var-file=../terraform.stg.tfvars
+	cd project/amplify && terraform apply -auto-approve -var-file=../terraform.stg.tfvars
 
 reset:
 	find . -type d -name ".terraform" -exec rm -rf {} +

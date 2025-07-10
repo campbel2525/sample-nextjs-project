@@ -56,7 +56,7 @@ install: ## インストール
 	docker compose -f $(pf) -p $(pn) exec -it user_front npm install
 	docker compose -f $(pf) -p $(pn) exec -it user_front npx prisma generate
 
-user_front-shell: ## shellに入る
+user-front-shell: ## shellに入る
 	docker compose -f $(pf) -p $(pn) exec -it user_front bash
 
 scripts-shell: ## shellに入る
@@ -75,7 +75,7 @@ check: ## コードフォーマット
 	docker compose -f $(pf) -p $(pn) exec -it user_front npm run lint -- --fix
 # 	docker compose -f $(pf) -p $(pn) exec -it user_front npx tsc --noEmit
 
-user_front-run: ## サーバー起動
+user-front-run: ## サーバー起動
 	docker compose -f $(pf) -p $(pn) exec -it user_front npm run dev -w user_front
 
 # user_front-build-run: ## サーバー起動
@@ -139,10 +139,10 @@ push: ## push
 # 	docker compose -f $(pf) -p $(pn) exec -it user_front bash -c "npx eslint ."
 # 	docker compose -f $(pf) -p $(pn) exec -it user_front npx tsc --noEmit
 
-reset-commit: ## mainブランチのコミット履歴を1つにする 使用は控える
-	git checkout --orphan new-branch-name
-	git add .
-	git branch -D main
-	git branch -m main
-	git commit -m "first commit"
-	git push origin -f main
+# reset-commit: ## mainブランチのコミット履歴を1つにする 使用は控える
+# 	git checkout --orphan new-branch-name
+# 	git add .
+# 	git branch -D main
+# 	git branch -m main
+# 	git commit -m "first commit"
+# 	git push origin -f main

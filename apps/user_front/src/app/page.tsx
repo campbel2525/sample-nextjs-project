@@ -18,15 +18,15 @@ export default function Home() {
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
-        <header className="mb-8 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <header className="mb-8 p-4 bg-white rounded-lg shadow">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold">
               サンプルアプリケーション
             </h1>
             <div className="flex items-center gap-4">
               {session ? (
                 <>
-                  <span className="text-gray-700 dark:text-gray-300">
+                  <span className="">
                     こんにちは、{session.user.name || session.user.email}さん
                   </span>
                   <button
@@ -48,10 +48,10 @@ export default function Home() {
           </div>
         </header>
 
-        <main className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <main className="bg-white rounded-lg shadow p-6">
           {session ? (
             <div>
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+              <h2 className="text-xl font-semibold mb-4">
                 ダッシュボード
               </h2>
               <div className="space-y-4">
@@ -67,7 +67,7 @@ export default function Home() {
             </div>
           ) : (
             <div>
-              <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+              <h2 className="text-xl font-semibold mb-4">
                 ようこそ
               </h2>
               <p className="text-gray-600 dark:text-gray-300 mb-4">

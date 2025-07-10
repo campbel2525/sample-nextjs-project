@@ -23,89 +23,75 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
-          {/* ヘッダー */}
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-600">
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">マイページ</h1>
-              <div className="flex gap-2">
-                <Link
-                  href={APP_PAGES.home}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-                >
-                  ホームに戻る
-                </Link>
-                <button
-                  onClick={() => signOut()}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                >
-                  ログアウト
-                </button>
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <h1 className="text-2xl font-bold text-gray-900">マイページ</h1>
+            <div className="flex items-center gap-4">
+              <Link href={APP_PAGES.home} className="text-sm text-gray-600 hover:text-gray-900">
+                ホームに戻る
+              </Link>
+              <button
+                onClick={() => signOut()}
+                className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700"
+              >
+                ログアウト
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="py-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+            <div className="px-4 py-5 sm:p-6">
+              <h2 className="text-lg font-medium text-gray-900">プロフィール情報</h2>
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">ユーザーID</label>
+                  <p className="mt-1 text-sm text-gray-900 p-2 bg-gray-50 rounded-md">
+                    {session.user.id}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">メールアドレス</label>
+                  <p className="mt-1 text-sm text-gray-900 p-2 bg-gray-50 rounded-md">
+                    {session.user.email}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">名前</label>
+                  <p className="mt-1 text-sm text-gray-900 p-2 bg-gray-50 rounded-md">
+                    {session.user.name}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* プロフィール情報 */}
-          <div className="px-6 py-6">
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  プロフィール情報
-                </h2>
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      ユーザーID
-                    </label>
-                    <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded">
-                      {session.user.id}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      メールアドレス
-                    </label>
-                    <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded">
-                      {session.user.email}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      名前
-                    </label>
-                    <div className="mt-1 text-sm font-semibold text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded">
-                      {session.user.name}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* アクション */}
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  アカウント設定
-                </h2>
-                <div className="space-y-3">
-                  <Link
-                    href={APP_PAGES.auth.editProfile}
-                    className="block w-full px-4 py-3 bg-green-600 text-white text-center rounded hover:bg-green-700 transition-colors"
-                  >
-                    プロフィールを編集
-                  </Link>
-                  <Link
-                    href={APP_PAGES.auth.changePassword}
-                    className="block w-full px-4 py-3 bg-blue-600 text-white text-center rounded hover:bg-blue-700 transition-colors"
-                  >
-                    パスワードを変更
-                  </Link>
-                </div>
+          <div className="mt-8 bg-white shadow-sm rounded-lg overflow-hidden">
+            <div className="px-4 py-5 sm:p-6">
+              <h2 className="text-lg font-medium text-gray-900">アカウント設定</h2>
+              <div className="mt-4 space-y-3">
+                <Link
+                  href={APP_PAGES.auth.editProfile}
+                  className="block w-full px-4 py-3 bg-green-600 text-white text-center font-medium rounded-md hover:bg-green-700"
+                >
+                  プロフィールを編集
+                </Link>
+                <Link
+                  href={APP_PAGES.auth.changePassword}
+                  className="block w-full px-4 py-3 bg-blue-600 text-white text-center font-medium rounded-md hover:bg-blue-700"
+                >
+                  パスワードを変更
+                </Link>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

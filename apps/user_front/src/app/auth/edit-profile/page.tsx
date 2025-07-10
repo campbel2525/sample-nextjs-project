@@ -97,96 +97,85 @@ export default function EditProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
-          {/* ヘッダー */}
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-600">
-            <div className="flex justify-between items-center">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">プロフィール編集</h1>
-              <Link
-                href={APP_PAGES.auth.profile}
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                ← 戻る
-              </Link>
-            </div>
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <h1 className="text-xl font-bold text-gray-900">プロフィール編集</h1>
+            <Link href={APP_PAGES.auth.profile} className="text-sm text-gray-600 hover:text-gray-900">
+              マイページに戻る
+            </Link>
           </div>
+        </div>
+      </header>
 
-          {/* フォーム */}
-          <div className="px-6 py-6">
-            {success && (
-              <div className="mb-4 p-4 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded">
-                <p className="text-green-800 dark:text-green-200">
-                  プロフィールが正常に更新されました。
-                </p>
+      <main className="py-10">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+            <form onSubmit={handleSubmit} className="px-4 py-5 sm:p-6 space-y-6">
+              {success && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-sm text-green-700">プロフィールが正常に更新されました。</p>
+                </div>
+              )}
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                    名前
+                  </label>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="お名前を入力してください"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    メールアドレス
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="メールアドレスを入力してください"
+                  />
+                </div>
               </div>
-            )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  名前
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700 font-medium"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="お名前を入力してください"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  メールアドレス
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700 font-medium"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="メールアドレスを入力してください"
-                />
-              </div>
-
-              <div className="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded p-3">
-                <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-800">
                   <strong>注意:</strong> メールアドレスを変更した場合、次回ログイン時は新しいメールアドレスを使用してください。
                 </p>
               </div>
 
-              {error && (
-                <div className="text-red-600 text-sm text-center">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex gap-3">
+              <div className="flex justify-end">
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex-1 py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
                 >
                   {isLoading ? '更新中...' : 'プロフィールを更新'}
                 </button>
-                <Link
-                  href={APP_PAGES.auth.profile}
-                  className="flex-1 py-2 px-4 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-center"
-                >
-                  マイページに戻る
-                </Link>
               </div>
             </form>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

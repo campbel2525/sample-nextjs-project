@@ -1,10 +1,8 @@
 version: 1
 applications:
+  # --- ユーザー向けフロントエンドの設定 ---
   - appRoot: apps/user_front
     env:
-      # Amplifyのビルドイメージにデフォルトで含まれるキャッシュ設定を無効にし、
-      # 下記のcacheセクションで明示的に指定したパスのみをキャッシュするようにします。
-      # これにより、モノレポ構成でのキャッシュ効率が向上します。
       - name: AMPLIFY_MONOREPO_APP_ROOT
         value: apps/user_front
       - name: AMPLIFY_DIFF_DEPLOY
@@ -12,15 +10,12 @@ applications:
     phases:
       preBuild:
         commands:
-          # 1. ルートで全パッケージの依存関係をインストール
           - npm ci
       build:
         commands:
-          # 2. SSMから環境変数を取得し、user_frontアプリの.envファイルとして保存
           - aws ssm get-parameter --name "/amplify/user-front/.env" --with-decryption --query "Parameter.Value" --output text > .env
-          # 3. データベースのマイグレーションを実行
+          # DBマイグレーションはどちらか一方で実行すればOK
           - npx prisma migrate deploy
-          # 4. user_frontアプリをビルド
           - npm run build
     artifacts:
       baseDirectory: .next
@@ -28,13 +23,36 @@ applications:
         - '**/*'
     cache:
       paths:
-        # Next.jsのビルドキャッシュを保存
         - .next/cache/**/*
+
+  # --- 管理者向けフロントエンドの設定（追加） ---
+  # - appRoot: apps/admin_front
+  #   env:
+  #     - name: AMPLIFY_MONOREPO_APP_ROOT
+  #       value: apps/admin_front
+  #     - name: AMPLIFY_DIFF_DEPLOY
+  #       value: 'false'
+  #   phases:
+  #     # preBuildは共通なので省略可能
+  #     build:
+  #       commands:
+  #         # admin_front用の環境変数をSSMから取得
+  #         - aws ssm get-parameter --name "/amplify/admin-front/.env" --with-decryption --query "Parameter.Value" --output text > .env
+  #         # admin_frontをビルド
+  #         - npm run build
+  #   artifacts:
+  #     baseDirectory: .next
+  #     files:
+  #       - '**/*'
+  #   cache:
+  #     paths:
+  #       - .next/cache/**/*
+
+  # --- 共通パッケージの定義 ---
   - appRoot: packages/db
   - appRoot: packages/factories
   - appRoot: packages/seeders
   - appRoot: packages/tsconfig
 cache:
   paths:
-    # ルートのnode_modulesをキャッシュ
     - node_modules/**/*
