@@ -1,0 +1,20 @@
+動作検証していません
+
+今後動作検証が終わったらこのメッセージ消してください
+
+
+サンプル
+
+```
+module "user_front" {
+  source = "../../modules/create_amplify"
+
+  app_name                 = "user-front"
+  github_repository_url    = var.github_repository_url
+  github_token             = var.github_token
+  github_branch_name       = var.github_branch_name
+  amplify_platform         = "WEB_COMPUTE"
+  amplify_branch_framework = "Next.js - SSR"
+  amplify_branch_stage     = "PRODUCTION"
+}
+```

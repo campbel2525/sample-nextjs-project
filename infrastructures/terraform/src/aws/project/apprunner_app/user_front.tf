@@ -1,0 +1,20 @@
+resource "aws_apprunner_connection" "github" {
+  connection_name = "github-connection"
+  provider_type   = "GITHUB"
+}
+
+module "user_front" {
+  source = "../../modules/create_apprunner"
+
+  app_name              = "user-front"
+  github_repository_url = var.github_repository_url
+  github_branch_name    = var.github_branch_name
+  apprunner_cpu         = 256
+  apprunner_memory      = 512
+  subnet_ids = [
+    module.private_subnet_1a.id,
+    module.private_subnet_1c.id,
+  ]
+  security_group_ids       = [module.app_sg.id]
+  apprunner_connection_arn = aws_apprunner_connection.github.arn
+}

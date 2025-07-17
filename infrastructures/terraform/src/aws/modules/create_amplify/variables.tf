@@ -11,3 +11,13 @@ variable "github_token" {
 variable "github_branch_name" {
   type = string
 }
+
+variable "amplify_platform" {
+  type = string
+}
+variable "amplify_branch_framework" {
+  type = string
+}
+variable "amplify_branch_stage" {
+  type = string
+}

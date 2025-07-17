@@ -14,7 +14,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.5"
+      version = "~> 6.3"
     }
   }
 
@@ -26,3 +26,23 @@ terraform {
 # ---------------------------------------------
 # Modules
 # ---------------------------------------------
+
+module "private_subnet_1a" {
+  source = "../../modules/get_subnet"
+
+  subnet_name = "private-subnet-1a"
+}
+
+module "private_subnet_1c" {
+  source = "../../modules/get_subnet"
+
+  subnet_name = "private-subnet-1c"
+}
+
+module "amplify_sg" {
+  source = "../../modules/get_security_group"
+
+  vpc_name            = "vpc"
+  security_group_name = "amplify-sg"
+
+}

@@ -19,14 +19,14 @@ terraform {
   }
 
   backend "s3" {
-    key = "rds/db1/terraform.tfstate"
+    key = "apprunner_app/terraform.tfstate"
   }
 }
-
 
 # ---------------------------------------------
 # Modules
 # ---------------------------------------------
+
 module "private_subnet_1a" {
   source = "../../modules/get_subnet"
 
@@ -39,9 +39,10 @@ module "private_subnet_1c" {
   subnet_name = "private-subnet-1c"
 }
 
-module "db_security_group" {
+module "app_sg" {
   source = "../../modules/get_security_group"
 
   vpc_name            = "vpc"
-  security_group_name = "db-sg"
+  security_group_name = "app-sg"
+
 }

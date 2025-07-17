@@ -35,3 +35,5 @@ RUN mv /tmp/tflint /usr/local/bin/
 RUN rm /tmp/tflint.zip
 
 RUN echo "alias sl='aws sso login --profile aws-stg'" >> ~/.bashrc
+RUN echo "alias ta='terraform apply -auto-approve -var-file=../terraform.stg.tfvars'" >> ~/.bashrc
+RUN echo "alias td='terraform destroy -auto-approve -var-file=../terraform.stg.tfvars'" >> ~/.bashrc
