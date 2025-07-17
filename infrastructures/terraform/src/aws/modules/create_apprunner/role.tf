@@ -34,7 +34,7 @@ resource "aws_iam_role_policy" "apprunner_ssm_read_policy" {
           "ssm:GetParameters",
           "ssm:GetParametersByPath"
         ]
-        Resource = [aws_ssm_parameter.app_env_vars.arn]
+        Resource = var.ssm_parameter_arns
       },
     ]
   })

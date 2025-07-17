@@ -29,6 +29,11 @@ variable "security_group_ids" {
   default = []
 }
 
-variable "apprunner_connection_arn" {
+variable "apprunner_connection_github_arn" {
   type = string
+}
+
+variable "ssm_parameter_arns" {
+  type    = list(string)
+  default = []
 }

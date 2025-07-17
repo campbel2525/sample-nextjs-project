@@ -14,7 +14,7 @@ resource "aws_apprunner_service" "example" {
 
     # 認証設定を追記
     authentication_configuration {
-      connection_arn = var.apprunner_connection_arn
+      connection_arn = var.apprunner_connection_github_arn
     }
 
     code_repository {

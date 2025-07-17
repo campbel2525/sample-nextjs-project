@@ -1,58 +1,64 @@
-version: 1
-applications:
-  # --- ユーザー向けフロントエンドの設定 ---
-  - appRoot: apps/user_front
-    env:
-      - name: AMPLIFY_MONOREPO_APP_ROOT
-        value: apps/user_front
-      - name: AMPLIFY_DIFF_DEPLOY
-        value: 'false'
-    phases:
-      preBuild:
-        commands:
-          - npm ci
-      build:
-        commands:
-          - aws ssm get-parameter --name "/amplify/user-front/.env" --with-decryption --query "Parameter.Value" --output text > .env
-          # DBマイグレーションはどちらか一方で実行すればOK
-          - npx prisma migrate deploy
-          - npm run build
-    artifacts:
-      baseDirectory: .next
-      files:
-        - '**/*'
-    cache:
-      paths:
-        - .next/cache/**/*
+# AWS App Runner 設定ファイル (apprunner.yaml)
+# このファイルは user_front アプリケーション用です。
+# リポジトリのルートディレクトリに配置してください。
 
-  # --- 管理者向けフロントエンドの設定（追加） ---
-  # - appRoot: apps/admin_front
-  #   env:
-  #     - name: AMPLIFY_MONOREPO_APP_ROOT
-  #       value: apps/admin_front
-  #     - name: AMPLIFY_DIFF_DEPLOY
-  #       value: 'false'
-  #   phases:
-  #     # preBuildは共通なので省略可能
-  #     build:
-  #       commands:
-  #         # admin_front用の環境変数をSSMから取得
-  #         - aws ssm get-parameter --name "/amplify/admin-front/.env" --with-decryption --query "Parameter.Value" --output text > .env
-  #         # admin_frontをビルド
-  #         - npm run build
-  #   artifacts:
-  #     baseDirectory: .next
-  #     files:
-  #       - '**/*'
-  #   cache:
-  #     paths:
-  #       - .next/cache/**/*
+version: 1.0
 
-  # --- 共通パッケージの定義 ---
-  - appRoot: packages/db
-  - appRoot: packages/factories
-  - appRoot: packages/seeders
-  - appRoot: packages/tsconfig
-cache:
-  paths:
-    - node_modules/**/*
+# 使用するランタイムとバージョンを指定します。
+# 例: nodejs18, nodejs20, nodejs22
+runtime: nodejs22
+
+# ビルドフェーズの設定
+build:
+  commands:
+    # pre-build: ビルド前に実行するコマンド
+    pre-build:
+      # モノレポのルートで依存関係をインストールします
+      - echo "Installing dependencies at the root..."
+      - npm ci
+
+    # build: アプリケーションをビルドするコマンド
+    build:
+      # 環境変数は下の 'run.secrets' セクションで安全に設定します。
+      # .env ファイルを作成するコマンドは不要です。
+
+      # データベースのマイグレーションを実行します
+      # Prismaスキーマファイルのパスは実際の構成に合わせて調整してください。
+      - echo "Running database migrations..."
+      # - npx prisma migrate deploy --schema ./apps/user_front/prisma/schema.prisma
+
+      # user_front アプリケーションをビルドします
+      # (npm workspaces を使わない場合の例)
+      - echo "Building the application in apps/user_front..."
+      - cd apps/user_front && npm run build
+
+# 実行フェーズの設定
+run:
+  # アプリケーションを起動するコマンド
+  # user_front/package.json の "start" スクリプトが実行されます (例: "next start")
+  command: cd apps/user_front && npm start
+
+  # App Runnerがリクエストを転送するポート番号
+  # Next.jsのデフォルトは3000です
+  network:
+    port: 3000
+
+  # 環境変数の設定 (推奨)
+  # アプリケーションで利用する環境変数を定義します。
+  # valueFrom には、対応するSSMパラメータストアのパラメータ名を指定してください。
+  # App RunnerサービスにアタッチするIAMロールには、これらのシークレットへのアクセス権限が必要です。
+  secrets:
+    - name: SECRET_KEY
+      valueFrom: /apprunner/user-front/env/SECRET_KEY
+
+    - name: FRONTEND_API_URL
+      valueFrom: /apprunner/user-front/env/FRONTEND_API_URL
+
+    - name: DATABASE_URL
+      valueFrom: /apprunner/user-front/env/DATABASE_URL
+
+    - name: NEXTAUTH_URL
+      valueFrom: /apprunner/user-front/env/NEXTAUTH_URL
+
+    - name: NEXTAUTH_SECRET
+      valueFrom: /apprunner/user-front/env/NEXTAUTH_SECRET
