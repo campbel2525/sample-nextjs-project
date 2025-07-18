@@ -46,8 +46,8 @@ module "app_sg" {
   security_group_name = "app-sg"
 }
 
-module "user_front_ecr_repository" {
-  source = "../../modules/get_ecr_repository"
+# module "user_front_ecr_repository" {
+#   source = "../../modules/get_ecr_repository"
 
-  repository_name = "user-front-repo"
-}
+#   repository_name = "user-front-repo"
+# }

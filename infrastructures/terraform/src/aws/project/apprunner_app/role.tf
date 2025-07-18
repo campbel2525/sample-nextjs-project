@@ -15,7 +15,7 @@ resource "aws_iam_openid_connect_provider" "github" {
 
 # GitHub Actionsが引き受けるためのロール
 resource "aws_iam_role" "github_actions_role" {
-  name = "${var.app_name}-apprunner-github-actions-role"
+  name = "user-front-apprunner-github-actions-role"
 
   # OIDCプロバイダー経由での引き受けを許可
   assume_role_policy = jsonencode({

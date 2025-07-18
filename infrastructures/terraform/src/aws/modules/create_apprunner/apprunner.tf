@@ -12,12 +12,11 @@ resource "aws_apprunner_service" "this" {
   source_configuration {
     auto_deployments_enabled = var.apprunner_auto_deployments_enabled
 
-    # 認証設定を追記
     authentication_configuration {
       access_role_arn = aws_iam_role.apprunner_ecr_access_role.arn
     }
     image_repository {
-      image_identifier      = "${var.ecr_repository_url}:latest"
+      image_identifier      = "${aws_ecr_repository.app.repository_url}:latest"
       image_repository_type = "ECR"
 
       image_configuration {
@@ -27,8 +26,9 @@ resource "aws_apprunner_service" "this" {
   }
 
   instance_configuration {
-    cpu               = var.apprunner_cpu
-    memory            = var.apprunner_memory
+    cpu    = var.apprunner_cpu
+    memory = var.apprunner_memory
+    # 修正: 正しいロール名を参照
     instance_role_arn = aws_iam_role.apprunner_instance_role.arn
   }
 

@@ -20,5 +20,5 @@ module "user_front_apprunner" {
     "/apprunner/user-front/env/NEXTAUTH_URL",
     "/apprunner/user-front/env/NEXTAUTH_SECRET",
   ]
-  ecr_repository_url = module.user_front_ecr_repository.repository_url
+  # ecr_repository_url = module.user_front_ecr_repository.repository_url
 }

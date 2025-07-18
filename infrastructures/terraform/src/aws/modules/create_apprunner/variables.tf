@@ -35,6 +35,6 @@ variable "ssm_parameter_app_env_names" {
   default = []
 }
 
-variable "ecr_repository_url" {
-  type = string
-}
+# variable "ecr_repository_url" {
+#   type = string
+# }
