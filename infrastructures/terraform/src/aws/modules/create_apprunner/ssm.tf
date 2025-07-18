@@ -1,9 +1,11 @@
-# resource "aws_ssm_parameter" "app_env_vars" {
-#   name  = "/apprunner/${var.app_name}/env_vars"
-#   type  = "SecureString"
-#   value = "{}"
+resource "aws_ssm_parameter" "app_env_vars" {
+  for_each = toset(var.ssm_parameter_app_env_names)
 
-#   lifecycle {
-#     ignore_changes = [value]
-#   }
-# }
+  name  = each.value
+  type  = "SecureString"
+  value = "default-value"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

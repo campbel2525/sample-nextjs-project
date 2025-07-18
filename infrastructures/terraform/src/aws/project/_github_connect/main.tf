@@ -19,35 +19,10 @@ terraform {
   }
 
   backend "s3" {
-    key = "apprunner_app/terraform.tfstate"
+    key = "github_connect/terraform.tfstate"
   }
 }
 
 # ---------------------------------------------
 # Modules
 # ---------------------------------------------
-
-module "private_subnet_1a" {
-  source = "../../modules/get_subnet"
-
-  subnet_name = "private-subnet-1a"
-}
-
-module "private_subnet_1c" {
-  source = "../../modules/get_subnet"
-
-  subnet_name = "private-subnet-1c"
-}
-
-module "app_sg" {
-  source = "../../modules/get_security_group"
-
-  vpc_name            = "vpc"
-  security_group_name = "app-sg"
-}
-
-module "user_front_ecr_repository" {
-  source = "../../modules/get_ecr_repository"
-
-  repository_name = "user-front-repo"
-}

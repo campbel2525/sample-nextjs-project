@@ -3,20 +3,21 @@ variable "app_name" {
   description = "ケバブケースで指定してください。例: user-front"
 }
 
-variable "github_repository_url" {
-  type = string
-}
-
-variable "github_branch_name" {
-  type = string
-}
-
 variable "apprunner_cpu" {
   type = number
 }
 
 variable "apprunner_memory" {
   type = number
+}
+
+variable "apprunner_port" {
+  type = number
+}
+
+variable "apprunner_auto_deployments_enabled" {
+  type    = bool
+  default = false
 }
 
 variable "subnet_ids" {
@@ -29,11 +30,11 @@ variable "security_group_ids" {
   default = []
 }
 
-variable "apprunner_connection_github_arn" {
-  type = string
-}
-
-variable "ssm_parameter_arns" {
+variable "ssm_parameter_app_env_names" {
   type    = list(string)
   default = []
+}
+
+variable "ecr_repository_url" {
+  type = string
 }

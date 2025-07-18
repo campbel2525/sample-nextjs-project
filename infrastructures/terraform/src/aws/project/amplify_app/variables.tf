@@ -4,18 +4,18 @@ variable "aws_default_profile" {
 }
 
 # GitHubのデプロイ関連
-variable "github_repository_url" {
-  type = string
-}
+# variable "github_repository_url" {
+#   type = string
+# }
 
-variable "github_token" {
-  type      = string
-  sensitive = true
-}
+# variable "github_token" {
+#   type      = string
+#   sensitive = true
+# }
 
-variable "github_branch_name" {
-  type = string
-}
+# variable "github_branch_name" {
+#   type = string
+# }
 
 # db
 variable "db_name" {
@@ -23,4 +23,15 @@ variable "db_name" {
 }
 variable "db_init_password" {
   type = string
+}
+
+
+# github
+variable "github_fingerprint" {
+  type        = string
+  description = "fingerprint for GitHub OIDC provider"
+}
+variable "github_subject" {
+  type        = string
+  description = "repo:<github account名>/<リポジトリ名>:ref:refs/heads/<ブランチ名>"
 }
