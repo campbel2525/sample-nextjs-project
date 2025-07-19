@@ -18,10 +18,10 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // ユーザーを検索（動的なモデル名を使用）
-          const user = await (prisma as any)[NEXT_AUTH_CONFIG.userModel].findUnique({
+          // ユーザーを検索
+          const user = await prisma.user.findUnique({
             where: {
-              [NEXT_AUTH_CONFIG.fields.email]: credentials.email,
+              email: credentials.email,
             },
           })
 
@@ -34,18 +34,17 @@ export const authOptions: NextAuthOptions = {
             .update(credentials.password)
             .digest('hex')
 
-          if (user[NEXT_AUTH_CONFIG.fields.password] !== hashedPassword) {
+          if (user.password !== hashedPassword) {
             return null
           }
 
           // 認証成功時にユーザー情報を返す
           return {
-            id: user[NEXT_AUTH_CONFIG.fields.id].toString(),
-            email: user[NEXT_AUTH_CONFIG.fields.email],
-            name: user[NEXT_AUTH_CONFIG.fields.name],
+            id: user.id.toString(),
+            email: user.email,
+            name: user.name,
           }
-        } catch (error) {
-          console.error('Authentication error:', error)
+        } catch {
           return null
         }
       },
@@ -99,29 +98,35 @@ export const authOptions: NextAuthOptions = {
       }
 
       // セッション更新時 (例: プロフィール更新後)
-      if (trigger === 'update' && session?.user) {
+      if (trigger === 'update' && session) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         token.name = session.user.name
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         token.email = session.user.email
       }
 
       // DBから最新のユーザー情報を取得してトークンを更新
       if (token.id) {
-        const dbUser = await (prisma as any)[NEXT_AUTH_CONFIG.userModel].findUnique({
-          where: { [NEXT_AUTH_CONFIG.fields.id]: parseInt(token.id) },
+        const dbUser = await prisma.user.findUnique({
+          where: { id: parseInt(token.id) },
         })
         if (dbUser) {
-          token.name = dbUser[NEXT_AUTH_CONFIG.fields.name]
-          token.email = dbUser[NEXT_AUTH_CONFIG.fields.email]
+          token.name = dbUser.name
+          token.email = dbUser.email
         }
       }
 
       return token
     },
-    async session({ session, token }) {
-      if (token) {
+    session({ session, token }) {
+      if (session.user && token.id) {
         session.user.id = token.id
-        session.user.name = token.name!
-        session.user.email = token.email!
+      }
+      if (session.user && token.name) {
+        session.user.name = token.name
+      }
+      if (session.user && token.email) {
+        session.user.email = token.email
       }
       return session
     },

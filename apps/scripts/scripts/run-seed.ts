@@ -9,9 +9,10 @@ async function main() {
 
 main()
   .catch((error) => {
+    // eslint-disable-next-line no-console
     console.error('Error during seeding:', error)
     process.exit(1)
   })
-  .finally(async () => {
-    await prisma.$disconnect()
+  .finally(() => {
+    void prisma.$disconnect()
   })

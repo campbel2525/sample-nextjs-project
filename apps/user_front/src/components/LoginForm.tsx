@@ -30,19 +30,22 @@ export default function LoginForm() {
 
       if (result?.ok) {
         // ログイン成功時の処理
-        console.log('ログイン成功')
         router.push('/') // ホームページにリダイレクト
       }
-    } catch (err) {
+    } catch {
       setError('ログイン中にエラーが発生しました')
-      console.error('Login error:', err)
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
+    <form
+      className="space-y-6"
+      onSubmit={(e) => {
+        void handleSubmit(e)
+      }}
+    >
       <div className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700">

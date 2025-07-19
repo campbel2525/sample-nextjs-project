@@ -27,6 +27,7 @@ export async function seedUsers(): Promise<void> {
   // 作成するユーザーのリストを定義
   const usersToCreate = [user1, user2];
 
+  // eslint-disable-next-line no-console
   console.log("Seeding 2 initial users...");
 
   // ループ処理でデータベースにユーザーを作成
@@ -40,11 +41,14 @@ export async function seedUsers(): Promise<void> {
       await prisma.user.create({
         data: userData,
       });
+      // eslint-disable-next-line no-console
       console.log(`  Created user: ${userData.email}`);
     } else {
+      // eslint-disable-next-line no-console
       console.log(`  Skipped (already exists): ${userData.email}`);
     }
   }
 
+  // eslint-disable-next-line no-console
   console.log("User seeding finished.");
 }

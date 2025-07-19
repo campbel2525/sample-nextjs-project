@@ -6,7 +6,7 @@ declare global {
 }
 
 // グローバルにインスタンスを保持し、なければ生成する
-export const prisma = globalThis.prisma || new PrismaClient();
+export const prisma = globalThis.prisma ?? new PrismaClient();
 
 // 開発環境では、グローバル変数を更新する
 if (process.env.NODE_ENV !== "production") {
