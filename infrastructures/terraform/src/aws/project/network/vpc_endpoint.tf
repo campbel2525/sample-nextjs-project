@@ -11,7 +11,7 @@ resource "aws_vpc_endpoint" "vpc_endpoint_ecr" {
   security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
   subnet_ids = [
     aws_subnet.private_subnet_1a.id,
-    # aws_subnet.private_subnet_1c.id
+    aws_subnet.private_subnet_1c.id
   ]
 
   private_dns_enabled = true
@@ -29,7 +29,7 @@ resource "aws_vpc_endpoint" "vpc_endpoint_dkr" {
   security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
   subnet_ids = [
     aws_subnet.private_subnet_1a.id,
-    # aws_subnet.private_subnet_1c.id
+    aws_subnet.private_subnet_1c.id
   ]
 
   private_dns_enabled = true
@@ -47,7 +47,7 @@ resource "aws_vpc_endpoint" "vpc_endpoint_ssm" {
   security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
   subnet_ids = [
     aws_subnet.private_subnet_1a.id,
-    # aws_subnet.private_subnet_1c.id
+    aws_subnet.private_subnet_1c.id
   ]
 
   private_dns_enabled = true
@@ -65,7 +65,7 @@ resource "aws_vpc_endpoint" "vpc_endpoint_ssm_messages" {
   security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
   subnet_ids = [
     aws_subnet.private_subnet_1a.id,
-    # aws_subnet.private_subnet_1c.id
+    aws_subnet.private_subnet_1c.id
   ]
 
   private_dns_enabled = true
@@ -83,7 +83,7 @@ resource "aws_vpc_endpoint" "vpc_endpoint_ec2_messages" {
   security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
   subnet_ids = [
     aws_subnet.private_subnet_1a.id,
-    # aws_subnet.private_subnet_1c.id
+    aws_subnet.private_subnet_1c.id
   ]
 
   private_dns_enabled = true
@@ -101,7 +101,7 @@ resource "aws_vpc_endpoint" "vpc_endpoint_cloudwatch_logs" {
   security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
   subnet_ids = [
     aws_subnet.private_subnet_1a.id,
-    # aws_subnet.private_subnet_1c.id
+    aws_subnet.private_subnet_1c.id
   ]
 
   private_dns_enabled = true
@@ -118,7 +118,7 @@ resource "aws_vpc_endpoint" "vpc_endpoint_s3" {
 
   route_table_ids = [
     aws_route_table.private_rtb_1a.id,
-    # aws_route_table.private_rtb_1c.id
+    aws_route_table.private_rtb_1c.id
   ]
 
   tags = {
@@ -147,7 +147,6 @@ resource "aws_security_group_rule" "vpc_endpoint_sg_in_all" {
   to_port           = 443
   cidr_blocks       = ["10.0.0.0/16"]
 }
-
 
 resource "aws_security_group_rule" "vpc_endpoint_sg_out_all" {
   security_group_id = aws_security_group.vpc_endpoint_sg.id

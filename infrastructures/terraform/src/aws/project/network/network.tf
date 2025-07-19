@@ -52,17 +52,17 @@ resource "aws_subnet" "private_subnet_1a" {
   }
 }
 
-# resource "aws_subnet" "private_subnet_1c" {
-#   vpc_id                  = aws_vpc.vpc.id
-#   availability_zone       = "ap-northeast-1c"
-#   cidr_block              = "10.0.5.0/24"
-#   map_public_ip_on_launch = false
+resource "aws_subnet" "private_subnet_1c" {
+  vpc_id                  = aws_vpc.vpc.id
+  availability_zone       = "ap-northeast-1c"
+  cidr_block              = "10.0.5.0/24"
+  map_public_ip_on_launch = false
 
-#   tags = {
-#     Name = "private-subnet-1c"
-#     Type = "private"
-#   }
-# }
+  tags = {
+    Name = "private-subnet-1c"
+    Type = "private"
+  }
+}
 
 # ---------------------------------------------
 # Internet Gatewayの設定
@@ -157,21 +157,21 @@ resource "aws_route_table_association" "private_rtb_to_private_subnet_1a" {
 #   }
 # }
 
-# resource "aws_route_table" "private_rtb_1c" {
-#   vpc_id = aws_vpc.vpc.id
+resource "aws_route_table" "private_rtb_1c" {
+  vpc_id = aws_vpc.vpc.id
 
-#   route {
-#     cidr_block     = "0.0.0.0/0"
-#     nat_gateway_id = aws_nat_gateway.ngw_1c.id
-#   }
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.ngw_1a.id # 費用を節約するためnat gatewayを1aと共有する
+  }
 
-#   tags = {
-#     Name = "private-rtb-1c"
-#     Type = "private"
-#   }
-# }
+  tags = {
+    Name = "private-rtb-1c"
+    Type = "private"
+  }
+}
 
-# resource "aws_route_table_association" "private_rtb_to_private_subnet_1c" {
-#   route_table_id = aws_route_table.private_rtb_1c.id
-#   subnet_id      = aws_subnet.private_subnet_1c.id
-# }
+resource "aws_route_table_association" "private_rtb_to_private_subnet_1c" {
+  route_table_id = aws_route_table.private_rtb_1c.id
+  subnet_id      = aws_subnet.private_subnet_1c.id
+}
