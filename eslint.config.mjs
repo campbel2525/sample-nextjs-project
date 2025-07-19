@@ -1,98 +1,86 @@
-// @ts-check
+// eslint.config.mjs
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import prettierConfig from 'eslint-config-prettier';
+import globals from 'globals';
 
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import prettierConfig from "eslint-config-prettier";
-import eslintRecommended from "@eslint/js";
-import tseslint from "typescript-eslint";
-import globals from "globals";
+const projectRoot = dirname(fileURLToPath(import.meta.url));
 
-const projectRoot =
-  import.meta.dirname || dirname(fileURLToPath(import.meta.url));
-
-export default [
-  // 1. グローバルな設定と無視するファイル (単一の設定オブジェクト)
+// The `tseslint.config` helper simplifies creating flat configurations.
+export default tseslint.config(
+  // 1. Global ignores for the entire monorepo.
   {
     ignores: [
-      "node_modules/",
-      "dist/",
-      ".next/",
-      "coverage/",
-      "**/build/",
-      "apps/**/.next/",
-      "apps/**/dist/",
-      "apps/**/build/",
-      "packages/**/dist/",
-      "packages/**/build/",
-      "*.config.js",
-      "*.config.mjs",
-      "*.config.ts",
-      "**/*.d.ts",
-      "eslint.config.mjs",
-      "apps/**/eslint.config.mjs",
+      '**/node_modules/',
+      '**/dist/',
+      '**/.next/',
+      '**/coverage/',
+      '**/build/',
+      // IMPORTANT: Ignore config files recursively using `**/`.
+      '**/*.config.js',
+      '**/*.config.mjs',
+      '**/*.config.ts',
+      '**/*.d.ts',
+      'repomix-output.xml',
+      'packages/db/prisma/migrations/**',
     ],
   },
 
-  // 2. ESLint の基本的な推奨ルール (単一の設定オブジェクト)
-  eslintRecommended.configs.recommended,
-
-  // 3. TypeScript-ESLint の基本・厳格ルールを適用するための複数の設定オブジェクト
-  // 各 recommended config はそれ自体が配列なので、個別にスプレッドしてトップレベルに配置します。
-  // そして、これらに共通する言語オプションやパーサーオプションは、別途オブジェクトで定義します。
+  // 2. Apply ESLint's recommended and typescript-eslint's base recommended rules to all files.
+  // These are spread directly into the main config array.
+  eslint.configs.recommended,
   ...tseslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
-  ...tseslint.configs.stylisticTypeChecked,
 
-  // TypeScript ファイルの言語オプション設定 (単一の設定オブジェクト)
-  // これは上記の recommended config とは別の、独立した設定オブジェクトとして配列に含めます。
+  // 3. Apply rules that REQUIRE type information ONLY to TypeScript files.
   {
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ['**/*.ts', '**/*.tsx'],
+    extends: [
+      ...tseslint.configs.recommendedTypeChecked,
+      ...tseslint.configs.stylisticTypeChecked,
+    ],
     languageOptions: {
       parserOptions: {
-        project: [
-          "./tsconfig.json",
-          "./apps/*/tsconfig.json",
-          "./packages/*/tsconfig.json",
-        ],
+        project: true, // Auto-detects tsconfig.json files.
         tsconfigRootDir: projectRoot,
       },
     },
-    // TypeScript 固有のルールカスタマイズはここに記述
-    // '@typescript-eslint/no-explicit-any': 'warn', // 必要であれば
-    // '@typescript-eslint/no-unsafe-function-type': 'warn',
   },
 
-  // ★ Next.js 固有の設定ブロックは、`eslint-config-next` を使わないためここにはありません。 ★
-
-  // 4. 実行環境のグローバル変数を設定 (単一の設定オブジェクト)
+  // 4. Set up global variables for browser and Node.js environments.
   {
-    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
     languageOptions: {
       globals: {
-        ...globals.node,
         ...globals.browser,
+        ...globals.node,
       },
     },
   },
 
-  // 5. 共通のルールカスタマイズ (単一の設定オブジェクト)
+  // 5. Apply your common rule customizations across all linted files.
   {
-    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
     rules: {
-      "no-console": "warn",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
+      'no-console': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
         {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-          caughtErrorsIgnorePattern: "^_",
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
         },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unsafe-function-type": "warn",
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unsafe-function-type': 'warn',
     },
   },
 
-  // 6. Prettierとの競合回避設定 (単一の設定オブジェクト - 必ず配列の最後に置く)
-  prettierConfig,
-];
+  // 6. As a safeguard, explicitly disable type-aware rules for JavaScript files.
+  {
+      files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
+      extends: [tseslint.configs.disableTypeChecked],
+  },
+
+  // 7. Prettier config must be LAST to override other formatting rules.
+  prettierConfig
+);

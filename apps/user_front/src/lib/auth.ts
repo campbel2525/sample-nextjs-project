@@ -107,7 +107,7 @@ export const authOptions: NextAuthOptions = {
       // DBから最新のユーザー情報を取得してトークンを更新
       if (token.id) {
         const dbUser = await (prisma as any)[NEXT_AUTH_CONFIG.userModel].findUnique({
-          where: { [NEXT_AUTH_CONFIG.fields.id]: parseInt(token.id as string) },
+          where: { [NEXT_AUTH_CONFIG.fields.id]: parseInt(token.id) },
         })
         if (dbUser) {
           token.name = dbUser[NEXT_AUTH_CONFIG.fields.name]
@@ -119,9 +119,9 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id as string
-        session.user.name = token.name as string
-        session.user.email = token.email as string
+        session.user.id = token.id
+        session.user.name = token.name!
+        session.user.email = token.email!
       }
       return session
     },
