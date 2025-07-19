@@ -1,19 +1,17 @@
+// @ts-check
+
 import { dirname } from "path";
 import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-import prettierConfig from "eslint-config-prettier"; // ←【追加】Prettier連携用の設定をインポート
+import prettierConfig from "eslint-config-prettier";
+import eslintRecommended from "@eslint/js";
+import tseslint from "typescript-eslint";
+import globals from "globals";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const projectRoot =
+  import.meta.dirname || dirname(fileURLToPath(import.meta.url));
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-// export default eslintConfig ← この形式から、直接配列をエクスポートする形に変更します
 export default [
-  // 1. 【追加】無視するディレクトリの設定
-  // これで .next ディレクトリなどをESLintがチェックしなくなります
+  // 1. グローバルな設定と無視するファイル (単一の設定オブジェクト)
   {
     ignores: [
       "node_modules/",
@@ -30,18 +28,58 @@ export default [
       "*.config.mjs",
       "*.config.ts",
       "**/*.d.ts",
-      // ★ ここが重要: ESLint の設定ファイル自体を無視するルールを追加 ★
-      "eslint.config.mjs", // ルートのeslint.config.mjsを無視
-      "apps/**/eslint.config.mjs", // 各ワークスペースのeslint.config.mjsを無視
+      "eslint.config.mjs",
+      "apps/**/eslint.config.mjs",
     ],
   },
 
-  // 2. Next.jsの基本設定を読み込み (ここは元のコードと同じです)
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  // 2. ESLint の基本的な推奨ルール (単一の設定オブジェクト)
+  eslintRecommended.configs.recommended,
 
-  // 3. 【追加】未使用変数(_)を許可するためのルールカスタマイズ
+  // 3. TypeScript-ESLint の基本・厳格ルールを適用するための複数の設定オブジェクト
+  // 各 recommended config はそれ自体が配列なので、個別にスプレッドしてトップレベルに配置します。
+  // そして、これらに共通する言語オプションやパーサーオプションは、別途オブジェクトで定義します。
+  ...tseslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
+
+  // TypeScript ファイルの言語オプション設定 (単一の設定オブジェクト)
+  // これは上記の recommended config とは別の、独立した設定オブジェクトとして配列に含めます。
   {
+    files: ["**/*.ts", "**/*.tsx"],
+    languageOptions: {
+      parserOptions: {
+        project: [
+          "./tsconfig.json",
+          "./apps/*/tsconfig.json",
+          "./packages/*/tsconfig.json",
+        ],
+        tsconfigRootDir: projectRoot,
+      },
+    },
+    // TypeScript 固有のルールカスタマイズはここに記述
+    // '@typescript-eslint/no-explicit-any': 'warn', // 必要であれば
+    // '@typescript-eslint/no-unsafe-function-type': 'warn',
+  },
+
+  // ★ Next.js 固有の設定ブロックは、`eslint-config-next` を使わないためここにはありません。 ★
+
+  // 4. 実行環境のグローバル変数を設定 (単一の設定オブジェクト)
+  {
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
+    },
+  },
+
+  // 5. 共通のルールカスタマイズ (単一の設定オブジェクト)
+  {
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
     rules: {
+      "no-console": "warn",
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
@@ -50,9 +88,11 @@ export default [
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unsafe-function-type": "warn",
     },
   },
 
-  // 4. 【追加】Prettierとの競合回避設定 (必ず配列の最後に置きます！)
+  // 6. Prettierとの競合回避設定 (単一の設定オブジェクト - 必ず配列の最後に置く)
   prettierConfig,
 ];
