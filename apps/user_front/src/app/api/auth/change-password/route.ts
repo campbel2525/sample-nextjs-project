@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { createHash } from 'crypto'
 import { authOptions } from '@/lib/auth'
 import { NEXT_AUTH_CONFIG } from '@/config/settings'
-import { prisma } from '@my-monorepo/db/client'
+import { getUserDelegate } from '@/lib/prisma-helpers'
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,8 +33,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const userDelegate = getUserDelegate()
+
     // 現在のユーザー情報を取得
-    const user = await prisma.user.findUnique({
+    const user = await userDelegate.findUnique({
       where: {
         id: parseInt(session.user.id),
       },
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
       .digest('hex')
 
     // パスワードを更新
-    await prisma.user.update({
+    await userDelegate.update({
       where: {
         id: parseInt(session.user.id),
       },

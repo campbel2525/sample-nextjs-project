@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@my-monorepo/db/client'
+import { getUserDelegate } from '@/lib/prisma-helpers'
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,8 +39,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const userDelegate = getUserDelegate()
+
     // 現在のユーザー情報を取得
-    const currentUser = await prisma.user.findUnique({
+    const currentUser = await userDelegate.findUnique({
       where: {
         id: parseInt(session.user.id),
       },
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     // メールアドレスが変更されている場合、重複チェック
     if (email.trim() !== currentUser.email) {
-      const existingUser = await prisma.user.findUnique({
+      const existingUser = await userDelegate.findUnique({
         where: {
           email: email.trim(),
         },
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     // プロフィールを更新
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await userDelegate.update({
       where: {
         id: parseInt(session.user.id),
       },
