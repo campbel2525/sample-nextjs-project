@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { APP_PAGES } from '@/config/settings'
+import { APP_PAGES } from '@/lib/shared/config'
 
 export default function ChangePasswordPage() {
   const { data: session, status } = useSession()

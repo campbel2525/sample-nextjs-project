@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
-import { APP_PAGES } from '@/config/settings'
+import { APP_PAGES } from '@/lib/shared/config'
 
 export default function Home() {
   const { data: session, status } = useSession()

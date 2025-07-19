@@ -1,7 +1,8 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { createHash } from 'crypto'
-import { NEXT_AUTH_CONFIG, APP_PAGES } from '@/config/settings'
+import { NEXT_AUTH_CONFIG, APP_PAGES } from '@/lib/shared/config'
+import { prisma } from '@my-monorepo/db/client'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,7 +19,7 @@ export const authOptions: NextAuthOptions = {
 
         try {
           // ユーザーを検索
-          const user = await NEXT_AUTH_CONFIG.userModel.findUnique({
+          const user = await prisma[NEXT_AUTH_CONFIG.userModel].findUnique({
             where: {
               [NEXT_AUTH_CONFIG.fields.email]: credentials.email,
             },
@@ -106,7 +107,7 @@ export const authOptions: NextAuthOptions = {
 
       // DBから最新のユーザー情報を取得してトークンを更新
       if (token.id) {
-        const dbUser = await NEXT_AUTH_CONFIG.userModel.findUnique({
+        const dbUser = await prisma[NEXT_AUTH_CONFIG.userModel].findUnique({
           where: { [NEXT_AUTH_CONFIG.fields.id]: parseInt(token.id) },
         })
         if (dbUser) {

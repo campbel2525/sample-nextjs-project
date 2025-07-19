@@ -1,5 +1,3 @@
-import { prisma } from '@my-monorepo/db/client'
-
 // クッキーのプレフィックス
 export const COOKIE_PREFIX = 'user_front'
 
@@ -22,7 +20,7 @@ export const APP_PAGES = {
 // NextAuth.js認証設定
 export const NEXT_AUTH_CONFIG = {
   // 使用するテーブル/モデル名
-  userModel: prisma.user,
+  userModel: 'user',
 
   // フィールド名のマッピング
   fields: {

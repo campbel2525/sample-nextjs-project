@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { NEXT_AUTH_CONFIG } from '@/config/settings'
+import { authOptions } from '@/lib/server/auth'
+import { NEXT_AUTH_CONFIG } from '@/lib/shared/config'
+import { prisma } from '@my-monorepo/db/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 現在のユーザー情報を取得
-    const currentUser = await NEXT_AUTH_CONFIG.userModel.findUnique({
+    const currentUser = await prisma[NEXT_AUTH_CONFIG.userModel].findUnique({
       where: {
         [NEXT_AUTH_CONFIG.fields.id]: parseInt(session.user.id),
       },
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     // メールアドレスが変更されている場合、重複チェック
     if (email.trim() !== currentUser[NEXT_AUTH_CONFIG.fields.email]) {
-      const existingUser = await NEXT_AUTH_CONFIG.userModel.findUnique({
+      const existingUser = await prisma[NEXT_AUTH_CONFIG.userModel].findUnique({
         where: {
           [NEXT_AUTH_CONFIG.fields.email]: email.trim(),
         },
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // プロフィールを更新
-    const updatedUser = await NEXT_AUTH_CONFIG.userModel.update({
+    const updatedUser = await prisma[NEXT_AUTH_CONFIG.userModel].update({
       where: {
         [NEXT_AUTH_CONFIG.fields.id]: parseInt(session.user.id),
       },
