@@ -33,11 +33,11 @@ module "private_subnet_1a" {
   subnet_name = "private-subnet-1a"
 }
 
-module "private_subnet_1c" {
-  source = "../../modules/get_subnet"
+# module "private_subnet_1c" {
+#   source = "../../modules/get_subnet"
 
-  subnet_name = "private-subnet-1c"
-}
+#   subnet_name = "private-subnet-1c"
+# }
 
 module "app_sg" {
   source = "../../modules/get_security_group"

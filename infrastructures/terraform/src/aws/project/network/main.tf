@@ -22,3 +22,7 @@ terraform {
     key = "network/terraform.tfstate"
   }
 }
+
+module "current_account" {
+  source = "../../modules/get_aws_account"
+}

@@ -5,10 +5,10 @@ module "user_front_apprunner" {
   apprunner_cpu                      = 256
   apprunner_memory                   = 512
   apprunner_port                     = 3000
-  apprunner_auto_deployments_enabled = false # 初期のデプロイはfalseにする
+  apprunner_auto_deployments_enabled = false # 初期のapplyはfalseにする
   subnet_ids = [
     module.private_subnet_1a.id,
-    module.private_subnet_1c.id,
+    # module.private_subnet_1c.id,
   ]
   security_group_ids = [
     module.app_sg.id,

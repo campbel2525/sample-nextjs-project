@@ -6,6 +6,13 @@ help: ## ヘルプを表示
 fmt: ## 再起的にfmt
 	terraform fmt --recursive
 
+reset:
+	find . -type d -name ".terraform" -exec rm -rf {} +
+	find . -type f -name ".terraform.lock.hcl" -exec rm -f {} +
+
+# ---------------------------------------------
+# ステージング環境
+# ---------------------------------------------
 stg-init:
 	./init-stg.sh
 
@@ -13,14 +20,31 @@ stg-apply: ## apply
 	make stg-init
 	cd network && terraform apply -auto-approve -var-file=../terraform.stg.tfvars
 	cd rds1 && terraform apply -auto-approve -var-file=../terraform.stg.tfvars
+	cd amplify_user_app && terraform apply -auto-approve -target=module.user_front_apprunner.aws_ecr_repository.app -var-file=../terraform.stg.tfvars
+	cd amplify_user_app && ./push_initial_image.sh aws-stg ap-northeast-1 user-front-repo
 	cd amplify_user_app && terraform apply -auto-approve -var-file=../terraform.stg.tfvars
 
 stg-destroy: ## destroy
 	make stg-init
-	cd amplify_user_app && terraform destroy -auto-approve -var-file=../terraform.stg.tfvars
+	cd amplify_user_app && ./push_initial_image.sh aws-stg ap-northeast-1 user-front-repo
 	cd rds1 && terraform destroy -auto-approve -var-file=../terraform.stg.tfvars
 	cd network && terraform destroy -auto-approve -var-file=../terraform.stg.tfvars
 
-reset:
-	find . -type d -name ".terraform" -exec rm -rf {} +
-	find . -type f -name ".terraform.lock.hcl" -exec rm -f {} +
+# ---------------------------------------------
+# 本番環境
+# ---------------------------------------------
+# prod-init:
+# 	./init-prod.sh
+# prod-apply: ## apply
+# 	make prod-init
+# 	cd network && terraform apply -auto-approve -var-file=../terraform.prod.tfvars
+# 	cd rds1 && terraform apply -auto-approve -var-file=../terraform.prod.tfvars
+# 	cd amplify_user_app && terraform apply -auto-approve -target=module.user_front_apprunner.aws_ecr_repository.app -var-file=../terraform.prod.tfvars
+# 	cd amplify_user_app && ./push_initial_image.sh aws-prod ap-northeast-1 user-front-repo
+# 	cd amplify_user_app && terraform apply -auto-approve -var-file=../terraform.prod.tfvars
+
+# prod-destroy: ## destroy
+# 	make prod-init
+# 	cd amplify_user_app && ./push_initial_image.sh aws-prod ap-northeast-1 user-front-repo
+# 	cd rds1 && terraform destroy -auto-approve -var-file=../terraform.prod.tfvars
+# 	cd network && terraform destroy -auto-approve -var-file=../terraform.prod.tfvars

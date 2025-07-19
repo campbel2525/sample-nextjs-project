@@ -5,6 +5,7 @@ services:
     restart: "no"
     tty: true
     platform: linux/amd64
+    privileged: true # dockerコンテナ内でdockerを実行するために必要
     build:
       context: .
       dockerfile: Dockerfile

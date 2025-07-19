@@ -29,7 +29,7 @@ variable "db_init_password" {
 # github
 variable "github_fingerprint" {
   type        = string
-  description = "fingerprint for GitHub OIDC provider"
+  description = "fingerprint for GitHub OIDC provider. 全ての文字を小文字に変換すること"
 }
 variable "github_subject" {
   type        = string
