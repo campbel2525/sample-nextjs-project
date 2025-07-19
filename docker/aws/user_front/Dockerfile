@@ -9,8 +9,9 @@ WORKDIR /app
 # モノレポのルートの package.json とロックファイルをコピーします
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
 
-# Next.js アプリケーションの package.json をコピー
+# Next.js アプリケーションと scripts ワークスペースの package.json をコピー
 COPY apps/user_front/package.json apps/user_front/
+COPY apps/scripts/package.json apps/scripts/
 
 # Prisma スキーマとマイグレーションファイルをコピー
 COPY packages/db/prisma/ ./packages/db/prisma/
@@ -36,7 +37,7 @@ RUN npm run build --workspace apps/user_front
 FROM public.ecr.aws/docker/library/node:22-bullseye-slim AS runner
 
 # アプリケーションの実行ユーザーを作成 (セキュリティベストプラクティス)
-# コンテナを root ユーザーで実行しないようにします
+# コンテナをrootユーザーで実行しないようにします
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 USER nextjs
@@ -59,21 +60,30 @@ ENV PORT=3000
 # ビルドステージから必要なファイルをコピー
 # Next.js の standalone 出力を使用する場合
 COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/public ./public
-# 静的アセットをコピー
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public/
+COPY --from=builder /app/.next/static ./.next/static/
+
 # Prisma Client とマイグレーションファイルをコピー
 # ビルドステージで /app/packages/db/prisma にコピーされた内容を、実行ステージの /app/prisma に配置します
 COPY --from=builder /app/packages/db/prisma ./prisma/
 
+# seed スクリプトとその依存関係 (ts-node, typescript) をコピー
+# scripts ワークスペース全体をコピーします
+COPY --from=builder /app/apps/scripts/ ./apps/scripts/
+# packages/db も seed が依存しているのでコピー
+COPY --from=builder /app/packages/db/ ./packages/db/
+# packages/factories と packages/seeders も seed に必要なのでコピー
+COPY --from=builder /app/packages/factories/ ./packages/factories/
+COPY --from=builder /app/packages/seeders/ ./packages/seeders/
+
+# tsconfig をコピー（ts-node 実行に必要）
+COPY --from=builder /app/packages/tsconfig/ ./packages/tsconfig/
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+
 
 # アプリケーションの起動コマンド
-# ここでマイグレーションを実行し、その後アプリケーションを起動します。
+# ここでマイグレーションを実行し、その後 seed スクリプトを実行、最後にアプリケーションを起動します。
 # `npx prisma migrate deploy` は、保留中のすべてのマイグレーションをデータベースに適用します。
+# `npx ts-node apps/scripts/scripts/run-seed.ts` は seed スクリプトを実行します。
 # データベース接続に必要な環境変数 (DATABASE_URL) が App Runner の環境変数で設定されている必要があります。
-# CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node server.js"]
-
-# もし必要であれば、べき等（何回実行しても同じ結果になる）な seed スクリプトをマイグレーション後に実行できます。
 CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && npx ts-node apps/scripts/scripts/run-seed.ts && node server.js"]
-# ただし、seed の実行には `ts-node` や `typescript` が必要になり、runner イメージを重くする可能性があります。
-# 通常、seed は本番環境での自動デプロイでは実行せず、手動または別のジョブで行うのが一般的です。
