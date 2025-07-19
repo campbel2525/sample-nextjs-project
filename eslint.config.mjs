@@ -1,10 +1,10 @@
 // eslint.config.mjs
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import eslint from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import prettierConfig from 'eslint-config-prettier';
-import globals from 'globals';
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import eslint from "@eslint/js";
+import tseslint from "typescript-eslint";
+import prettierConfig from "eslint-config-prettier";
+import globals from "globals";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 
@@ -13,18 +13,18 @@ export default tseslint.config(
   // 1. Global ignores for the entire monorepo.
   {
     ignores: [
-      '**/node_modules/',
-      '**/dist/',
-      '**/.next/',
-      '**/coverage/',
-      '**/build/',
+      "**/node_modules/",
+      "**/dist/",
+      "**/.next/",
+      "**/coverage/",
+      "**/build/",
       // IMPORTANT: Ignore config files recursively using `**/`.
-      '**/*.config.js',
-      '**/*.config.mjs',
-      '**/*.config.ts',
-      '**/*.d.ts',
-      'repomix-output.xml',
-      'packages/db/prisma/migrations/**',
+      "**/*.config.js",
+      "**/*.config.mjs",
+      "**/*.config.ts",
+      "**/*.d.ts",
+      "repomix-output.xml",
+      "packages/db/prisma/migrations/**",
     ],
   },
 
@@ -35,7 +35,7 @@ export default tseslint.config(
 
   // 3. Apply rules that REQUIRE type information ONLY to TypeScript files.
   {
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ["**/*.ts", "**/*.tsx"],
     extends: [
       ...tseslint.configs.recommendedTypeChecked,
       ...tseslint.configs.stylisticTypeChecked,
@@ -61,26 +61,26 @@ export default tseslint.config(
   // 5. Apply your common rule customizations across all linted files.
   {
     rules: {
-      'no-console': 'warn',
-      '@typescript-eslint/no-unused-vars': [
-        'error',
+      "no-console": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
         {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_',
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
         },
       ],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unsafe-function-type': 'warn',
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unsafe-function-type": "warn",
     },
   },
 
   // 6. As a safeguard, explicitly disable type-aware rules for JavaScript files.
   {
-      files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
-      extends: [tseslint.configs.disableTypeChecked],
+    files: ["**/*.js", "**/*.mjs", "**/*.cjs"],
+    extends: [tseslint.configs.disableTypeChecked],
   },
 
   // 7. Prettier config must be LAST to override other formatting rules.
-  prettierConfig
+  prettierConfig,
 );

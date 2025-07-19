@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { APP_PAGES } from '@/config/settings'
+import { APP_PAGES } from '@/lib/shared/config'
 
 export default function ChangePasswordPage() {
   const { data: session, status } = useSession()
@@ -60,10 +60,12 @@ export default function ChangePasswordPage() {
         }),
       })
 
-      const data = await response.json()
+      const data: { error?: string } = (await response.json()) as {
+        error?: string
+      }
 
       if (!response.ok) {
-        setError(data.error || 'パスワードの変更に失敗しました')
+        setError(data.error ?? 'パスワードの変更に失敗しました')
         return
       }
 
@@ -71,9 +73,8 @@ export default function ChangePasswordPage() {
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-    } catch (err) {
+    } catch {
       setError('パスワード変更中にエラーが発生しました')
-      console.error('Change password error:', err)
     } finally {
       setIsLoading(false)
     }
@@ -98,7 +99,12 @@ export default function ChangePasswordPage() {
       <main className="py-10">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-            <form onSubmit={handleSubmit} className="px-4 py-5 sm:p-6 space-y-6">
+            <form
+              onSubmit={(e) => {
+                void handleSubmit(e)
+              }}
+              className="px-4 py-5 sm:p-6 space-y-6"
+            >
               {success && (
                 <div className="p-3 bg-green-50 border border-green-200 rounded-md">
                   <p className="text-sm text-green-700">

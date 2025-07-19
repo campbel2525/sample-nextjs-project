@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { createHash } from 'crypto'
-import { authOptions } from '@/lib/auth'
-import { NEXT_AUTH_CONFIG } from '@/config/settings'
+import { authOptions } from '@/lib/server/auth'
+import { NEXT_AUTH_CONFIG } from '@/lib/shared/config'
 import { prisma } from '@my-monorepo/db/client'
 
 export async function POST(request: NextRequest) {
@@ -13,7 +13,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 })
     }
 
-    const { currentPassword, newPassword } = await request.json()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const {
+      currentPassword,
+      newPassword,
+    }: { currentPassword?: string; newPassword?: string } = await request.json()
 
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
@@ -22,7 +26,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (newPassword.length < 8) {
+    if (!newPassword || newPassword.length < 8) {
       return NextResponse.json(
         { error: '新しいパスワードは8文字以上で入力してください' },
         { status: 400 }
@@ -30,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 現在のユーザー情報を取得
-    const user = await (prisma as any)[NEXT_AUTH_CONFIG.userModel].findUnique({
+    const user = await prisma[NEXT_AUTH_CONFIG.userModel].findUnique({
       where: {
         [NEXT_AUTH_CONFIG.fields.id]: parseInt(session.user.id),
       },
@@ -58,7 +62,7 @@ export async function POST(request: NextRequest) {
       .digest('hex')
 
     // パスワードを更新
-    await (prisma as any)[NEXT_AUTH_CONFIG.userModel].update({
+    await prisma[NEXT_AUTH_CONFIG.userModel].update({
       where: {
         [NEXT_AUTH_CONFIG.fields.id]: parseInt(session.user.id),
       },
@@ -70,8 +74,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: 'パスワードが正常に変更されました',
     })
-  } catch (error) {
-    console.error('Change password API error:', error)
+  } catch {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 })
   }
 }

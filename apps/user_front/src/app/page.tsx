@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
-import { APP_PAGES } from '@/config/settings'
+import { APP_PAGES } from '@/lib/shared/config'
 
 export default function Home() {
   const { data: session, status } = useSession()
@@ -27,10 +27,12 @@ export default function Home() {
               {session ? (
                 <>
                   <span className="text-sm text-gray-600">
-                    こんにちは、{session.user.name || session.user.email}さん
+                    こんにちは、{session.user.name ?? session.user.email}さん
                   </span>
                   <button
-                    onClick={() => signOut()}
+                    onClick={() => {
+                      void signOut()
+                    }}
                     className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700"
                   >
                     ログアウト

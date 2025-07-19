@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { NEXT_AUTH_CONFIG } from '@/config/settings'
+import { authOptions } from '@/lib/server/auth'
+import { NEXT_AUTH_CONFIG } from '@/lib/shared/config'
 import { prisma } from '@my-monorepo/db/client'
 
 export async function POST(request: NextRequest) {
@@ -12,7 +12,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 })
     }
 
-    const { name, email } = await request.json()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const { name, email }: { name?: string; email?: string } = await request.json()
 
     if (!name || !email) {
       return NextResponse.json(
@@ -22,11 +23,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 名前とメールアドレスのバリデーション
-    if (name.trim().length === 0) {
+    if (!name || name.trim().length === 0) {
       return NextResponse.json({ error: '名前は必須です' }, { status: 400 })
     }
 
-    if (email.trim().length === 0) {
+    if (!email || email.trim().length === 0) {
       return NextResponse.json({ error: 'メールアドレスは必須です' }, { status: 400 })
     }
 
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 現在のユーザー情報を取得
-    const currentUser = await (prisma as any)[NEXT_AUTH_CONFIG.userModel].findUnique({
+    const currentUser = await prisma[NEXT_AUTH_CONFIG.userModel].findUnique({
       where: {
         [NEXT_AUTH_CONFIG.fields.id]: parseInt(session.user.id),
       },
@@ -52,13 +53,11 @@ export async function POST(request: NextRequest) {
 
     // メールアドレスが変更されている場合、重複チェック
     if (email.trim() !== currentUser[NEXT_AUTH_CONFIG.fields.email]) {
-      const existingUser = await (prisma as any)[NEXT_AUTH_CONFIG.userModel].findUnique(
-        {
-          where: {
-            [NEXT_AUTH_CONFIG.fields.email]: email.trim(),
-          },
-        }
-      )
+      const existingUser = await prisma[NEXT_AUTH_CONFIG.userModel].findUnique({
+        where: {
+          [NEXT_AUTH_CONFIG.fields.email]: email.trim(),
+        },
+      })
 
       if (existingUser) {
         return NextResponse.json(
@@ -69,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // プロフィールを更新
-    const updatedUser = await (prisma as any)[NEXT_AUTH_CONFIG.userModel].update({
+    const updatedUser = await prisma[NEXT_AUTH_CONFIG.userModel].update({
       where: {
         [NEXT_AUTH_CONFIG.fields.id]: parseInt(session.user.id),
       },
@@ -87,8 +86,7 @@ export async function POST(request: NextRequest) {
         email: updatedUser[NEXT_AUTH_CONFIG.fields.email],
       },
     })
-  } catch (error) {
-    console.error('Update profile API error:', error)
+  } catch {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 })
   }
 }

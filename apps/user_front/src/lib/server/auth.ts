@@ -1,8 +1,8 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { prisma } from '@my-monorepo/db/client'
 import { createHash } from 'crypto'
-import { NEXT_AUTH_CONFIG, APP_PAGES } from '@/config/settings'
+import { NEXT_AUTH_CONFIG, APP_PAGES } from '@/lib/shared/config'
+import { prisma } from '@my-monorepo/db/client'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,8 +18,8 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // ユーザーを検索（動的なモデル名を使用）
-          const user = await (prisma as any)[NEXT_AUTH_CONFIG.userModel].findUnique({
+          // ユーザーを検索
+          const user = await prisma[NEXT_AUTH_CONFIG.userModel].findUnique({
             where: {
               [NEXT_AUTH_CONFIG.fields.email]: credentials.email,
             },
@@ -44,8 +44,7 @@ export const authOptions: NextAuthOptions = {
             email: user[NEXT_AUTH_CONFIG.fields.email],
             name: user[NEXT_AUTH_CONFIG.fields.name],
           }
-        } catch (error) {
-          console.error('Authentication error:', error)
+        } catch {
           return null
         }
       },
@@ -99,14 +98,16 @@ export const authOptions: NextAuthOptions = {
       }
 
       // セッション更新時 (例: プロフィール更新後)
-      if (trigger === 'update' && session?.user) {
+      if (trigger === 'update' && session) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         token.name = session.user.name
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         token.email = session.user.email
       }
 
       // DBから最新のユーザー情報を取得してトークンを更新
       if (token.id) {
-        const dbUser = await (prisma as any)[NEXT_AUTH_CONFIG.userModel].findUnique({
+        const dbUser = await prisma[NEXT_AUTH_CONFIG.userModel].findUnique({
           where: { [NEXT_AUTH_CONFIG.fields.id]: parseInt(token.id) },
         })
         if (dbUser) {
@@ -117,11 +118,11 @@ export const authOptions: NextAuthOptions = {
 
       return token
     },
-    async session({ session, token }) {
-      if (token) {
+    session({ session, token }) {
+      if (session.user) {
         session.user.id = token.id
-        session.user.name = token.name!
-        session.user.email = token.email!
+        session.user.name = token.name
+        session.user.email = token.email
       }
       return session
     },

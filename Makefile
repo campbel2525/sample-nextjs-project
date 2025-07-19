@@ -106,7 +106,7 @@ push: ## push
 # git pull origin main
 	git add .
 	git commit -m "Commit at $$(date +'%Y-%m-%d %H:%M:%S')"
-	git push origin main
+	git push origin head
 # git push origin main:prod
 # 	git push origin main:stg
 

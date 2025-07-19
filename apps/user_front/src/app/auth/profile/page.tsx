@@ -3,7 +3,7 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { APP_PAGES } from '@/config/settings'
+import { APP_PAGES } from '@/lib/shared/config'
 
 export default function ProfilePage() {
   const { data: session, status } = useSession()
@@ -36,7 +36,9 @@ export default function ProfilePage() {
                 ホームに戻る
               </Link>
               <button
-                onClick={() => signOut()}
+                onClick={() => {
+                  void signOut()
+                }}
                 className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700"
               >
                 ログアウト
