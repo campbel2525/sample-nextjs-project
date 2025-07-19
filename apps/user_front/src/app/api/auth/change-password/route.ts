@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth'
 import { createHash } from 'crypto'
 import { authOptions } from '@/lib/auth'
 import { NEXT_AUTH_CONFIG } from '@/config/settings'
-import { getUserDelegate } from '@/lib/prisma-helpers'
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,12 +32,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const userDelegate = getUserDelegate()
-
     // 現在のユーザー情報を取得
-    const user = await userDelegate.findUnique({
+    const user = await NEXT_AUTH_CONFIG.userModel.findUnique({
       where: {
-        id: parseInt(session.user.id),
+        [NEXT_AUTH_CONFIG.fields.id]: parseInt(session.user.id),
       },
     })
 
@@ -51,7 +48,7 @@ export async function POST(request: NextRequest) {
       .update(currentPassword)
       .digest('hex')
 
-    if (user.password !== hashedCurrentPassword) {
+    if (user[NEXT_AUTH_CONFIG.fields.password] !== hashedCurrentPassword) {
       return NextResponse.json(
         { error: '現在のパスワードが正しくありません' },
         { status: 400 }
@@ -64,12 +61,12 @@ export async function POST(request: NextRequest) {
       .digest('hex')
 
     // パスワードを更新
-    await userDelegate.update({
+    await NEXT_AUTH_CONFIG.userModel.update({
       where: {
-        id: parseInt(session.user.id),
+        [NEXT_AUTH_CONFIG.fields.id]: parseInt(session.user.id),
       },
       data: {
-        password: hashedNewPassword,
+        [NEXT_AUTH_CONFIG.fields.password]: hashedNewPassword,
       },
     })
 

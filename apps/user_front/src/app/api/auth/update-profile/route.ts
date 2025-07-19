@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getUserDelegate } from '@/lib/prisma-helpers'
+import { NEXT_AUTH_CONFIG } from '@/config/settings'
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,12 +39,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const userDelegate = getUserDelegate()
-
     // 現在のユーザー情報を取得
-    const currentUser = await userDelegate.findUnique({
+    const currentUser = await NEXT_AUTH_CONFIG.userModel.findUnique({
       where: {
-        id: parseInt(session.user.id),
+        [NEXT_AUTH_CONFIG.fields.id]: parseInt(session.user.id),
       },
     })
 
@@ -53,10 +51,10 @@ export async function POST(request: NextRequest) {
     }
 
     // メールアドレスが変更されている場合、重複チェック
-    if (email.trim() !== currentUser.email) {
-      const existingUser = await userDelegate.findUnique({
+    if (email.trim() !== currentUser[NEXT_AUTH_CONFIG.fields.email]) {
+      const existingUser = await NEXT_AUTH_CONFIG.userModel.findUnique({
         where: {
-          email: email.trim(),
+          [NEXT_AUTH_CONFIG.fields.email]: email.trim(),
         },
       })
 
@@ -69,22 +67,22 @@ export async function POST(request: NextRequest) {
     }
 
     // プロフィールを更新
-    const updatedUser = await userDelegate.update({
+    const updatedUser = await NEXT_AUTH_CONFIG.userModel.update({
       where: {
-        id: parseInt(session.user.id),
+        [NEXT_AUTH_CONFIG.fields.id]: parseInt(session.user.id),
       },
       data: {
-        name: name.trim(),
-        email: email.trim(),
+        [NEXT_AUTH_CONFIG.fields.name]: name.trim(),
+        [NEXT_AUTH_CONFIG.fields.email]: email.trim(),
       },
     })
 
     return NextResponse.json({
       message: 'プロフィールが正常に更新されました',
       user: {
-        id: updatedUser.id,
-        name: updatedUser.name,
-        email: updatedUser.email,
+        id: updatedUser[NEXT_AUTH_CONFIG.fields.id],
+        name: updatedUser[NEXT_AUTH_CONFIG.fields.name],
+        email: updatedUser[NEXT_AUTH_CONFIG.fields.email],
       },
     })
   } catch {

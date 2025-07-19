@@ -2,7 +2,6 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { createHash } from 'crypto'
 import { NEXT_AUTH_CONFIG, APP_PAGES } from '@/config/settings'
-import { getUserDelegate } from './prisma-helpers'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,12 +17,10 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const userDelegate = getUserDelegate()
-
           // ユーザーを検索
-          const user = await userDelegate.findUnique({
+          const user = await NEXT_AUTH_CONFIG.userModel.findUnique({
             where: {
-              email: credentials.email,
+              [NEXT_AUTH_CONFIG.fields.email]: credentials.email,
             },
           })
 
@@ -36,15 +33,15 @@ export const authOptions: NextAuthOptions = {
             .update(credentials.password)
             .digest('hex')
 
-          if (user.password !== hashedPassword) {
+          if (user[NEXT_AUTH_CONFIG.fields.password] !== hashedPassword) {
             return null
           }
 
           // 認証成功時にユーザー情報を返す
           return {
-            id: user.id.toString(),
-            email: user.email,
-            name: user.name,
+            id: user[NEXT_AUTH_CONFIG.fields.id].toString(),
+            email: user[NEXT_AUTH_CONFIG.fields.email],
+            name: user[NEXT_AUTH_CONFIG.fields.name],
           }
         } catch {
           return null
@@ -109,13 +106,12 @@ export const authOptions: NextAuthOptions = {
 
       // DBから最新のユーザー情報を取得してトークンを更新
       if (token.id) {
-        const userDelegate = getUserDelegate()
-        const dbUser = await userDelegate.findUnique({
-          where: { id: parseInt(token.id) },
+        const dbUser = await NEXT_AUTH_CONFIG.userModel.findUnique({
+          where: { [NEXT_AUTH_CONFIG.fields.id]: parseInt(token.id) },
         })
         if (dbUser) {
-          token.name = dbUser.name
-          token.email = dbUser.email
+          token.name = dbUser[NEXT_AUTH_CONFIG.fields.name]
+          token.email = dbUser[NEXT_AUTH_CONFIG.fields.email]
         }
       }
 
