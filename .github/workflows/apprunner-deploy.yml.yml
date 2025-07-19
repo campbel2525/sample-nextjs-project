@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - stg # ステージングブランチへのプッシュをトリガー
-      - prod # 本番ブランチへのプッシュをトリガー
+      # - prod # 本番ブランチへのプッシュをトリガー
   workflow_dispatch: # 手動実行を許可 (環境選択可能)
 
 permissions:
