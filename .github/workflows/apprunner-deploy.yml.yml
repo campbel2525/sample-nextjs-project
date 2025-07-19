@@ -1,0 +1,80 @@
+name: Build, Push to ECR, and Deploy to App Runner (Multi-Environment)
+
+on:
+  push:
+    branches:
+      - stg # ステージングブランチへのプッシュをトリガー
+      - prod # 本番ブランチへのプッシュをトリガー
+  workflow_dispatch: # 手動実行を許可 (環境選択可能)
+
+permissions:
+  id-token: write # OpenID Connect を使用する場合に必要
+  contents: read  # リポジトリのコードをチェックアウトするために必要
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # 環境の指定
+    # GitHub Actions の環境設定で、ECR_REPOSITORY_NAME, APPRUNNER_SERVICE_ARN, IAM_ROLE_ARN, AWS_REGION を定義します。
+    environment:
+      # ブランチ名に基づいて環境を選択
+      # 例: stgブランチへのプッシュは 'stg' 環境を、prodブランチへのプッシュは 'prod' 環境を使用
+      name: ${{ github.ref_name }} # 'stg' または 'prod'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # イメージタグとしてコミットSHAを使用するため、完全な履歴を取得
+
+      - name: Run tests # テストステップを追加
+        run: |
+          echo "Running unit and integration tests..."
+          # ここにテストコマンドを記述します。
+          # 例:
+          # pip install -r requirements.txt
+          # python manage.py test
+          # npm install
+          # npm test
+          echo "Tests completed successfully."
+          # テストが失敗した場合は、exit 1 などでワークフローを中断させます。
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # 環境変数からIAMロールのARNを取得
+          role-to-assume: ${{ vars.IAM_ROLE_ARN }}
+          # 環境変数からAWSリージョンを取得
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        # ECR ログインアクションは aws-region を直接受け取らないため、configure-aws-credentials で設定された環境変数を使用します。
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          # GitHub のコミットSHAをイメージタグとして使用します
+          IMAGE_TAG: ${{ github.sha }}
+          # 環境変数からECRリポジトリ名を取得
+          ECR_REPOSITORY_NAME: ${{ vars.ECR_REPOSITORY_NAME }}
+        run: |
+          echo "Building Docker image for environment: ${{ github.ref_name }}"
+          echo "Building Docker image with tag: $IMAGE_TAG"
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_NAME:$IMAGE_TAG .
+          echo "Pushing image to ECR: $ECR_REGISTRY/$ECR_REPOSITORY_NAME:$IMAGE_TAG"
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_NAME:$IMAGE_TAG
+          echo "ECR_IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY_NAME:$IMAGE_ENV" >> $GITHUB_ENV
+
+      # App Runner の自動デプロイ機能を使用するため、明示的なデプロイ開始ステップは削除しました。
+      # ECR へのイメージプッシュ後、App Runner サービスが自動的に新しいイメージを検知し、デプロイを開始します。
+
+      # マイグレーションに関する注意:
+      # App Runner の場合、通常はコンテナ起動時にマイグレーションが実行されるように
+      # アプリケーションの Dockerfile やエントリーポイント (CMD/ENTRYPOINT) を設定します。
+      # 例: ENTRYPOINT ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+      # もし、デプロイ前に独立したマイグレーションステップが必要な場合は、
+      # ここに一時的なコンテナを起動してマイグレーションを実行するステップを追加する必要がありますが、
+      # それはより複雑な設定になります。
