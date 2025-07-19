@@ -20,7 +20,9 @@ export default function Home() {
       <header className="bg-white shadow-sm">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <h1 className="text-xl font-bold text-gray-900">サンプルアプリケーション</h1>
+            <h1 className="text-xl font-bold text-gray-900">
+              サンプルアプリケーション
+            </h1>
             <div className="flex items-center gap-4">
               {session ? (
                 <>

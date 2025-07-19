@@ -10,10 +10,7 @@ export async function POST(request: NextRequest) {
     // セッション確認
     const session = await getServerSession(authOptions)
     if (!session || !session.user) {
-      return NextResponse.json(
-        { error: '認証が必要です' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 })
     }
 
     const { currentPassword, newPassword } = await request.json()
@@ -40,10 +37,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'ユーザーが見つかりません' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 })
     }
 
     // 現在のパスワードを確認
@@ -76,12 +70,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: 'パスワードが正常に変更されました',
     })
-
   } catch (error) {
     console.error('Change password API error:', error)
-    return NextResponse.json(
-      { error: 'サーバーエラーが発生しました' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 })
   }
 }

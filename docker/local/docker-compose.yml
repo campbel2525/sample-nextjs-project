@@ -34,7 +34,9 @@ services:
       - ../../packages:/project/packages
       - ../../package.json:/project/package.json
       - ../../package-lock.json:/project/package-lock.json
-      - /project/node_modules
+      - ../../eslint.config.mjs:/project/eslint.config.mjs
+      - ../../tsconfig.json:/project/tsconfig.json
+      # - /project/node_modules
     working_dir: /project
     networks:
       - shared-network
@@ -60,7 +62,9 @@ services:
       - ../../packages:/project/packages
       - ../../package.json:/project/package.json
       - ../../package-lock.json:/project/package-lock.json
-      - /project/node_modules
+      - ../../eslint.config.mjs:/project/eslint.config.mjs
+      - ../../tsconfig.json:/project/tsconfig.json
+      # - /project/node_modules
     working_dir: /project
     networks:
       - shared-network

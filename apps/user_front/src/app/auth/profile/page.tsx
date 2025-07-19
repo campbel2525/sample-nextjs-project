@@ -29,7 +29,10 @@ export default function ProfilePage() {
           <div className="flex justify-between items-center py-4">
             <h1 className="text-xl font-bold text-gray-900">マイページ</h1>
             <div className="flex items-center gap-4">
-              <Link href={APP_PAGES.home} className="text-sm text-gray-600 hover:text-gray-900">
+              <Link
+                href={APP_PAGES.home}
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
                 ホームに戻る
               </Link>
               <button
@@ -50,19 +53,25 @@ export default function ProfilePage() {
               <h2 className="text-lg font-medium text-gray-900">プロフィール情報</h2>
               <div className="mt-4 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">ユーザーID</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    ユーザーID
+                  </label>
                   <p className="mt-1 text-sm text-gray-900 p-2 bg-gray-50 rounded-md">
                     {session.user.id}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">メールアドレス</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    メールアドレス
+                  </label>
                   <p className="mt-1 text-sm text-gray-900 p-2 bg-gray-50 rounded-md">
                     {session.user.email}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">名前</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    名前
+                  </label>
                   <p className="mt-1 text-sm text-gray-900 p-2 bg-gray-50 rounded-md">
                     {session.user.name}
                   </p>

@@ -85,7 +85,10 @@ export default function ChangePasswordPage() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <h1 className="text-xl font-bold text-gray-900">パスワード変更</h1>
-            <Link href={APP_PAGES.auth.profile} className="text-sm text-gray-600 hover:text-gray-900">
+            <Link
+              href={APP_PAGES.auth.profile}
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
               マイページに戻る
             </Link>
           </div>
@@ -98,7 +101,9 @@ export default function ChangePasswordPage() {
             <form onSubmit={handleSubmit} className="px-4 py-5 sm:p-6 space-y-6">
               {success && (
                 <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                  <p className="text-sm text-green-700">パスワードが正常に変更されました。</p>
+                  <p className="text-sm text-green-700">
+                    パスワードが正常に変更されました。
+                  </p>
                 </div>
               )}
               {error && (
@@ -141,7 +146,9 @@ export default function ChangePasswordPage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                   />
-                  <p className="mt-1 text-xs text-gray-500">8文字以上で入力してください</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    8文字以上で入力してください
+                  </p>
                 </div>
                 <div>
                   <label

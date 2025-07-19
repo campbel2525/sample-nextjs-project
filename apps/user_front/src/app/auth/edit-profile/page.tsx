@@ -102,7 +102,10 @@ export default function EditProfilePage() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <h1 className="text-xl font-bold text-gray-900">プロフィール編集</h1>
-            <Link href={APP_PAGES.auth.profile} className="text-sm text-gray-600 hover:text-gray-900">
+            <Link
+              href={APP_PAGES.auth.profile}
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
               マイページに戻る
             </Link>
           </div>
@@ -115,7 +118,9 @@ export default function EditProfilePage() {
             <form onSubmit={handleSubmit} className="px-4 py-5 sm:p-6 space-y-6">
               {success && (
                 <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                  <p className="text-sm text-green-700">プロフィールが正常に更新されました。</p>
+                  <p className="text-sm text-green-700">
+                    プロフィールが正常に更新されました。
+                  </p>
                 </div>
               )}
               {error && (
@@ -126,7 +131,10 @@ export default function EditProfilePage() {
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="name"
+                    className="block text-sm font-medium text-gray-700"
+                  >
                     名前
                   </label>
                   <input
@@ -141,7 +149,10 @@ export default function EditProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700"
+                  >
                     メールアドレス
                   </label>
                   <input
@@ -159,7 +170,8 @@ export default function EditProfilePage() {
 
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                 <p className="text-sm text-yellow-800">
-                  <strong>注意:</strong> メールアドレスを変更した場合、次回ログイン時は新しいメールアドレスを使用してください。
+                  <strong>注意:</strong>{' '}
+                  メールアドレスを変更した場合、次回ログイン時は新しいメールアドレスを使用してください。
                 </p>
               </div>
 

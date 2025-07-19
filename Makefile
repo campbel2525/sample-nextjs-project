@@ -27,6 +27,8 @@ init: ## 開発環境構築(ビルド)
 
 up: ## 開発環境up
 	docker compose -f $(pf) -p $(pn) up -d
+	make install
+
 
 down: ## 開発環境down
 	docker compose -f $(pf) -p $(pn) down
@@ -73,7 +75,7 @@ check: ## コードフォーマット
 # user_front
 	docker compose -f $(pf) -p $(pn) exec -it user_front npx prettier . --write
 	docker compose -f $(pf) -p $(pn) exec -it user_front npm run lint -- --fix
-# 	docker compose -f $(pf) -p $(pn) exec -it user_front npx tsc --noEmit
+	docker compose -f $(pf) -p $(pn) exec -it user_front npx tsc --noEmit
 
 user-front-run: ## サーバー起動
 	docker compose -f $(pf) -p $(pn) exec -it user_front npm run dev -w user_front
@@ -106,7 +108,7 @@ push: ## push
 	git commit -m "Commit at $$(date +'%Y-%m-%d %H:%M:%S')"
 	git push origin main
 # git push origin main:prod
-	git push origin main:stg
+# 	git push origin main:stg
 
 # github-init:
 # # ビルド

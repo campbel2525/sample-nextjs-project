@@ -9,10 +9,7 @@ export async function POST(request: NextRequest) {
     // セッション確認
     const session = await getServerSession(authOptions)
     if (!session || !session.user) {
-      return NextResponse.json(
-        { error: '認証が必要です' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 })
     }
 
     const { name, email } = await request.json()
@@ -26,17 +23,11 @@ export async function POST(request: NextRequest) {
 
     // 名前とメールアドレスのバリデーション
     if (name.trim().length === 0) {
-      return NextResponse.json(
-        { error: '名前は必須です' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: '名前は必須です' }, { status: 400 })
     }
 
     if (email.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'メールアドレスは必須です' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'メールアドレスは必須です' }, { status: 400 })
     }
 
     // 簡単なメールバリデーション
@@ -56,19 +47,18 @@ export async function POST(request: NextRequest) {
     })
 
     if (!currentUser) {
-      return NextResponse.json(
-        { error: 'ユーザーが見つかりません' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 })
     }
 
     // メールアドレスが変更されている場合、重複チェック
     if (email.trim() !== currentUser[NEXT_AUTH_CONFIG.fields.email]) {
-      const existingUser = await (prisma as any)[NEXT_AUTH_CONFIG.userModel].findUnique({
-        where: {
-          [NEXT_AUTH_CONFIG.fields.email]: email.trim(),
-        },
-      })
+      const existingUser = await (prisma as any)[NEXT_AUTH_CONFIG.userModel].findUnique(
+        {
+          where: {
+            [NEXT_AUTH_CONFIG.fields.email]: email.trim(),
+          },
+        }
+      )
 
       if (existingUser) {
         return NextResponse.json(
@@ -97,12 +87,8 @@ export async function POST(request: NextRequest) {
         email: updatedUser[NEXT_AUTH_CONFIG.fields.email],
       },
     })
-
   } catch (error) {
     console.error('Update profile API error:', error)
-    return NextResponse.json(
-      { error: 'サーバーエラーが発生しました' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 })
   }
 }
