@@ -46,8 +46,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.IAM_ROLE_ARN }}
-          aws-region:    ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.IAM_ROLE_ARN }}   # Repository Variables 参照
+          aws-region: ${{ vars.AWS_REGION }}      # Repository Variables 参照
 
       - name: Login to ECR
         id: login
@@ -72,8 +72,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.IAM_ROLE_ARN }}
-          aws-region:    ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.IAM_ROLE_ARN }}   # Repository Variables 参照
+          aws-region: ${{ vars.AWS_REGION }}      # Repository Variables 参照
 
       - name: Update Lambda from ECR Image
         run: |
@@ -99,8 +99,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ env.IAM_ROLE_ARN }}
-          aws-region:    ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.IAM_ROLE_ARN }}   # Repository Variables 参照
+          aws-region: ${{ vars.AWS_REGION }}      # Repository Variables 参照
 
       - name: Deploy App Runner Service
         uses: aws-actions/aws-app-runner-deploy-service@v1
