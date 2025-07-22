@@ -16,8 +16,6 @@ jobs:
     environment: ${{ github.ref_name }}
     name: 🚧 Build & Push to ECR
     runs-on: ubuntu-latest
-    outputs:
-      image-uri: ${{ steps.push.outputs.image-uri }}
 
     steps:
       - name: Checkout
@@ -46,18 +44,15 @@ jobs:
           aws-region:    ${{ vars.AWS_REGION }}
 
       - name: Login to ECR
-        id: login
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build & Push Docker Image
-        id: push
         run: |
           IMAGE_TAG=${{ github.sha }}
-          URI=${{ steps.login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
+          URI=${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
           docker build -t $URI -f docker/aws/user_front/Dockerfile .
           docker push $URI
-          # 新仕様: $GITHUB_OUTPUT に書き込んで「push」ステップの出力にセット
-          echo "image-uri=$URI" >> $GITHUB_OUTPUT
 
   deploy-lambda:
     environment: ${{ github.ref_name }}
@@ -74,9 +69,10 @@ jobs:
 
       - name: Update Lambda from ECR Image
         run: |
+          LATEST_IMAGE="${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:${{ github.sha }}"
           aws lambda update-function-code \
             --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
-            --image-uri    "${{ needs.build-and-push.outputs.image-uri }}"
+            --image-uri    "$LATEST_IMAGE"
 
       - name: Invoke Migrations Lambda
         run: |
@@ -99,16 +95,21 @@ jobs:
           role-to-assume: ${{ vars.IAM_ROLE }}
           aws-region:    ${{ vars.AWS_REGION }}
 
-      - name: Debug IMAGE_URI
+      - name: Login to ECR (again)
+        id: login-ecr-2
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Compute IMAGE_URI
         run: |
-          echo "→ image-uri from build-and-push: '${{ needs.build-and-push.outputs.image-uri }}'"
+          echo "IMAGE_URI=${{ steps.login-ecr-2.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Debug IMAGE_URI
+        run: echo "→ IMAGE_URI: $IMAGE_URI"
 
       - name: Deploy App Runner Service
         run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
-          IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
           aws apprunner update-service \
-            --service-arn "$SERVICE_ARN" \
+            --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
             --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}" \
             --region "${{ vars.AWS_REGION }}"
 
