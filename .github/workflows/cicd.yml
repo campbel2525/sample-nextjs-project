@@ -13,10 +13,11 @@ permissions:
 
 jobs:
   build-and-push:
+    environment: ${{ github.ref_name }}
     name: 🚧 Build & Push to ECR
     runs-on: ubuntu-latest
     outputs:
-      image_uri: ${{ steps.push.outputs.image_uri }}
+      image-uri: ${{ steps.push.outputs.image-uri }}
 
     steps:
       - name: Checkout
@@ -42,7 +43,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.IAM_ROLE }}
-          aws-region:    ${{ vars.AWS_REGION }}
+          aws-region:     ${{ vars.AWS_REGION }}
 
       - name: Login to ECR
         id: login
@@ -55,14 +56,11 @@ jobs:
           URI=${{ steps.login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
           docker build -t $URI -f docker/aws/user_front/Dockerfile .
           docker push $URI
-          echo "image_uri=$URI" >> $GITHUB_OUTPUT
-
-      - name: Dump build-and-push outputs
-        if: always()
-        run: |
-          echo ">> DEBUG: ${{ toJson(needs.build-and-push.outputs) }}"
+          # ↓ こちらでステップ出力にセットする
+          echo "image-uri=$URI" >> $GITHUB_OUTPUT
 
   deploy-lambda:
+    environment: ${{ github.ref_name }}
     name: 🛠 Deploy & Invoke Lambda (Migrations)
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -72,13 +70,13 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.IAM_ROLE }}
-          aws-region:    ${{ vars.AWS_REGION }}
+          aws-region:     ${{ vars.AWS_REGION }}
 
       - name: Update Lambda from ECR Image
         run: |
           aws lambda update-function-code \
             --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
-            --image-uri    "${{ needs.build-and-push.outputs.image_uri }}"
+            --image-uri     "${{ needs.build-and-push.outputs.image-uri }}"
 
       - name: Invoke Migrations Lambda
         run: |
@@ -89,8 +87,9 @@ jobs:
             /dev/stdout
 
   deploy-apprunner:
+    environment: ${{ github.ref_name }}
     name: 🚀 Deploy to App Runner via AWS CLI
-    needs: deploy-lambda
+    needs: [build-and-push, deploy-lambda] # <-- 修正箇所
     runs-on: ubuntu-latest
 
     steps:
@@ -98,18 +97,18 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.IAM_ROLE }}
-          aws-region:    ${{ vars.AWS_REGION }}
+          aws-region:     ${{ vars.AWS_REGION }}
 
       - name: Deploy App Runner Service
         run: |
           SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
-          IMAGE_URI="${{ needs.build-and-push.outputs.image_uri }}"
+          IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
           aws apprunner update-service \
             --service-arn "$SERVICE_ARN" \
             --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}" \
             --region "${{ vars.AWS_REGION }}"
 
-      - name: Wait for App Runner to Stabilize
+      - name: Wait for App Runner Service to Stabilize
         run: |
           aws apprunner wait service-stable \
             --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
