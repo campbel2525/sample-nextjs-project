@@ -13,11 +13,10 @@ permissions:
 
 jobs:
   build-and-push:
-    environment: ${{ github.ref_name }}
     name: 🚧 Build & Push to ECR
     runs-on: ubuntu-latest
     outputs:
-      image-uri: ${{ steps.push.outputs.image-uri }}
+      image_uri: ${{ steps.push.outputs.image_uri }}
 
     steps:
       - name: Checkout
@@ -56,11 +55,14 @@ jobs:
           URI=${{ steps.login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
           docker build -t $URI -f docker/aws/user_front/Dockerfile .
           docker push $URI
-          # ↓ こちらでステップ出力にセットする
-          echo "image-uri=$URI" >> $GITHUB_OUTPUT
+          echo "image_uri=$URI" >> $GITHUB_OUTPUT
+
+      - name: Dump build-and-push outputs
+        if: always()
+        run: |
+          echo ">> DEBUG: ${{ toJson(needs.build-and-push.outputs) }}"
 
   deploy-lambda:
-    environment: ${{ github.ref_name }}
     name: 🛠 Deploy & Invoke Lambda (Migrations)
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -76,7 +78,7 @@ jobs:
         run: |
           aws lambda update-function-code \
             --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
-            --image-uri    "${{ needs.build-and-push.outputs.image-uri }}"
+            --image-uri    "${{ needs.build-and-push.outputs.image_uri }}"
 
       - name: Invoke Migrations Lambda
         run: |
@@ -87,7 +89,6 @@ jobs:
             /dev/stdout
 
   deploy-apprunner:
-    environment: ${{ github.ref_name }}
     name: 🚀 Deploy to App Runner via AWS CLI
     needs: deploy-lambda
     runs-on: ubuntu-latest
@@ -102,13 +103,13 @@ jobs:
       - name: Deploy App Runner Service
         run: |
           SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
-          IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
+          IMAGE_URI="${{ needs.build-and-push.outputs.image_uri }}"
           aws apprunner update-service \
             --service-arn "$SERVICE_ARN" \
             --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}" \
             --region "${{ vars.AWS_REGION }}"
 
-      - name: Wait for App Runner Service to Stabilize
+      - name: Wait for App Runner to Stabilize
         run: |
           aws apprunner wait service-stable \
             --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
