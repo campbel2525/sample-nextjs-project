@@ -127,12 +127,13 @@ GitHub Actionsを利用して、特定のブランチへのプッシュをトリ
 
     Terraformのapply後に出力される以下の値を、GitHubリポジトリの`Environments` > `stg` (または `prod`) のSecretsに設定してください。
 
-    | Terraform Output Key             | GitHub Secret Name      |
-    | -------------------------------- | ----------------------- |
-    | `user_front_apprunner_arn`       | `APPRUNNER_SERVICE_ARN` |
-    | `user_front_created_ecr_name`    | `ECR_REPOSITORY_NAME`   |
-    | `user_front_github_actions_role` | `IAM_ROLE_ARN`          |
-    | `region_id`                      | `AWS_REGION`            |
+    | Terraform Output Key             | GitHub Secret Name               |
+    | -------------------------------- | -------------------------------- |
+    | `region_id`                      | `AWS_REGION`                     |
+    | `user_front_apprunner_arn`       | `APPRUNNER_SERVICE_ARN`          |
+    | `user_front_ecr_name`            | `ECR_REPOSITORY_NAME`            |
+    | `github_actions_iam_role`        | `IAM_ROLE`                       |
+    | `migration_lambda_function_name` | `MIGRATION_LAMBDA_FUNCTION_NAME` |
 
 3.  **アプリケーションの環境変数の設定**
 
