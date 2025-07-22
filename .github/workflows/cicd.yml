@@ -37,10 +37,13 @@ jobs:
         with:
           node-version: '22'  # Node.js バージョンを設定
 
-      - name: Install & Build
+      - name: Install dependencies
         run: |
-          npm install --workspaces  # ワークスペース全体の依存インストール
-          npm run build             # Next.js アプリをビルド
+          npm install --workspaces  # すべてのワークスペース依存モジュールをインストール
+
+      - name: Build user_front
+        run: |
+          npm --workspace=apps/user_front run build  # user_front ワークスペースのみビルド
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
