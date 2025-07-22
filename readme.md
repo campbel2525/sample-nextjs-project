@@ -1,94 +1,69 @@
-# info
+# Sample Next.js Monorepo Project
 
-node のモノレポを使用しています
+このプロジェクトは、Next.jsとPrismaを使用したモノレポ構成のサンプルです。
+開発環境はDockerで構築されており、`make`コマンドで簡単に操作できます。
 
-# 環境構築
+## ✨ 主要技術
 
-### 手順 1
+- **Frontend**: Next.js, React, TypeScript
+- **Backend**: Next.js (API Routes)
+- **ORM**: Prisma
+- **Database**: MySQL
+- **Container**: Docker, Docker Compose
+- **CI/CD**: GitHub Actions, AWS App Runner
+- **Lint/Format**: ESLint, Prettier
 
-```
-make cp-env
-make init
-```
+## 🚀 ローカル開発環境のセットアップ
 
-### 手順 2
+1.  **環境変数の設定**
 
-[http://localhost:3001/](http://localhost:3001/)にアクセスして
+    リポジトリのルートディレクトリで以下のコマンドを実行し、環境変数のサンプルファイルをコピーします。
 
-```
-user1@example.com
-test1
-```
+    ```bash
+    make cp-env
+    ```
 
-を入力してログインできれば OK
+2.  **開発環境の構築と起動**
 
-# メモ
+    以下のコマンドを実行すると、Dockerコンテナのビルド、データベースのセットアップ、依存パッケージのインストールが自動的に行われます。
 
-## npm でインストールする際のコマンド例
+    ```bash
+    make init
+    ```
 
-```
+3.  **動作確認**
+
+    セットアップが完了したら、ブラウザで [http://localhost:3001](http://localhost:3001) にアクセスしてください。
+    以下の情報でログインできれば、環境構築は成功です。
+    - **Email**: `user1@example.com`
+    - **Password**: `test1`
+
+## 🛠️ 便利なコマンド (`Makefile`)
+
+このプロジェクトでは、煩雑な`docker compose`コマンドをラップした`make`コマンドを提供しています。
+
+| コマンド                | 説明                                                                 |
+| ----------------------- | -------------------------------------------------------------------- |
+| `make help`             | 利用可能なすべてのコマンドとその説明を表示します。                   |
+| `make up`               | 開発環境（Dockerコンテナ）を起動します。                             |
+| `make down`             | 開発環境を停止します。                                               |
+| `make reset`            | データベースをリセットし、初期データを再投入します。                 |
+| `make check`            | すべてのワークスペースでコードのフォーマットと静的解析を実行します。 |
+| `make user-front-shell` | フロントエンド (`user_front`) のコンテナ内でシェルを起動します。     |
+| `make scripts-shell`    | スクリプト (`scripts`) 用のコンテナ内でシェルを起動します。          |
+
+その他のコマンドについては`Makefile`を参照するか、`make help`を実行してください。
+
+### パッケージのインストール
+
+特定のワークスペースにライブラリを追加する場合は、`-w`オプションを使用します。
+
+```bash
+# 例: user_front ワークスペースにライブラリをインストール
 npm install <ライブラリ名> -w user_front
 ```
 
-# cicd の設定方法
-
-## ブランチの想定運用
-
-- stg ブランチ: ステージング環境
-- prod ブランチ: 本番環境
-
-## 設定方法
-
-### 手順 1
-
-AWS の App Runner の使用を想定しています。以下のリポジトリを apply してください。
-
-- https://github.com/campbel2525/sample-apprunner-terraform
-
-### 手順 2
-
-コンソールに出力される
-
-- user_front_apprunner_arn
-- user_front_created_ecr_name
-- user_front_github_actions_role
-- region_id
-
-を GitHub の Environments にそれぞれ
-
-- user_front_apprunner_arn -> APPRUNNER_SERVICE_ARN
-- user_front_created_ecr_name -> ECR_REPOSITORY_NAME
-- user_front_github_actions_role -> IAM_ROLE_ARN
-- region_id -> AWS_REGION
-
-のようにセットしてください。
-
-もしくは AWS のコンソールに入って適切に取得してください
-
-### 手順 3
-
-`apps/user_front/.env`を参考にして適切に ssm にセットしてください
-
-### 手順 4
-
-stg ブランチに push してください。Git Hub Action が実行されて cicd が実行されます
-
-#
-
-docker compose -f ./docker/local/docker-compose.yml -p sample-next-project build --no-cache
-
-# 主要技術
-
-- Next.js
-- React
-- TypeScript
-- Prisma
-- PostgreSQL
-- Docker
-- ESLint
-- Prettier
-
-# ディレクトリ構成
+## 📁 ディレクトリ構成
 
 このリポジトリは、[Turborepo](https://turbo.build/repo)にインスパイアされたモノレポ構成を採用しています。
 
@@ -104,125 +79,58 @@ docker compose -f ./docker/local/docker-compose.yml -p sample-next-project build
   - `local`: ローカル開発環境用のDocker Composeファイルなどが格納されています。
   - `aws`: AWS App Runnerへのデプロイ用のDockerfileが格納されています。
 
-# フォルダ構成
-
 ```
 .
-├── .gitignore
-├── eslint.config.mjs
-├── Makefile
-├── package-lock.json
-├── package.json
-├── README.md
-├── tsconfig.json
 ├── apps
 │   ├── scripts
-│   │   ├── .env.example
-│   │   ├── .gitignore
-│   │   ├── .prettierrc.json
-│   │   ├── eslint.config.mjs
-│   │   ├── package.json
-│   │   ├── readme.md
-│   │   ├── tsconfig.json
-│   │   └── commands
-│   │       └── run-seed.ts
 │   └── user_front
-│       ├── .gitignore
-│       ├── .prettierrc.json
-│       ├── eslint.config.mjs
-│       ├── next.config.ts
-│       ├── package.json
-│       ├── postcss.config.mjs
-│       ├── README.md
-│       ├── tsconfig.json
-│       ├── public
-│       │   ├── file.svg
-│       │   ├── globe.svg
-│       │   ├── next.svg
-│       │   ├── vercel.svg
-│       │   └── window.svg
-│       └── src
-│           ├── app
-│           │   ├── favicon.ico
-│           │   ├── globals.css
-│           │   ├── layout.tsx
-│           │   ├── page.tsx
-│           │   ├── api
-│           │   │   └── auth
-│           │   │       ├── [...nextauth]
-│           │   │       ├── change-password
-│           │   │       │   └── route.ts
-│           │   │       └── update-profile
-│           │   │           └── route.ts
-│           │   ├── auth
-│           │   │   ├── change-password
-│           │   │   │   └── page.tsx
-│           │   │   ├── edit-profile
-│           │   │   │   └── page.tsx
-│           │   │   ├── login
-│           │   │   │   └── page.tsx
-│           │   │   └── profile
-│           │   │       └── page.tsx
-│           │   ├── components
-│           │   │   ├── LoginForm.tsx
-│           │   │   └── SessionProvider.tsx
-│           │   └── lib
-│           │       ├── client
-│           │       │   └── config.ts
-│           │       ├── server
-│           │       │   ├── auth.ts
-│           │       │   └── config.ts
-│           │       └── shared
-│           │           ├── config.ts
-│           │           └── utils.ts
-│           └── types
-│               ├── models.ts
-│               ├── next-auth.d.ts
-│               ├── requests.ts
-│               └── responses.ts
-├── docker
-│   ├── aws
-│   │   └── user_front
-│   │       └── Dockerfile
-│   └── local
-│       ├── .env
-│       ├── .env.example
-│       ├── docker-compose.yml
-│       ├── setup.dev.sql
-│       ├── wait-for-db.sh
-│       └── scripts
-│           └── nodejs
-│               └── Dockerfile
 ├── packages
 │   ├── db
-│   │   ├── client.ts
-│   │   ├── package.json
-│   │   └── prisma
-│   │       ├── schema.prisma
-│   │       └── migrations
-│   │           ├── migration_lock.toml
-│   │           └── 20250706141738_
-│   │               └── migration.sql
 │   ├── factories
-│   │   ├── package.json
-│   │   └── user_factory.ts
 │   ├── seeders
-│   │   ├── package.json
-│   │   └── user_seeder.ts
 │   └── tsconfig
-│       └── base.json
+├── docker
+│   ├── aws
+│   └── local
+├── .github/workflows
+│   └── cicd.yml
+├── Makefile
+├── package.json
+└── README.md
 ```
 
-# 便利なコマンド
+## 🔄 CI/CD
 
-`Makefile`に定義されている便利なコマンドです。
+GitHub Actionsを利用して、特定のブランチへのプッシュをトリガーにAWS App Runnerへ自動デプロイされます。
 
-- `make up`: 開発環境を起動します。
-- `make down`: 開発環境を停止します。
-- `make reset`: データベースをリセットし、初期データを投入します。
-- `make check`: コードのフォーマットと静的解析を実行します。
-- `make user-front-shell`: `user_front`サービスのコンテナ内でシェルを起動します。
-- `make scripts-shell`: `scripts`サービスのコンテナ内でシェルを起動します。
+### ブランチ戦略
 
-詳細は`Makefile`を参照してください。
-`make help`でコマンドの一覧と説明を確認できます。
+- `stg`ブランチ: ステージング環境
+- `prod`ブランチ: 本番環境
+
+### 設定手順
+
+1.  **AWSリソースの準備**
+
+    デプロイ先となるAWS App RunnerやECRなどのリソースを準備します。
+    以下のTerraformリポジトリを使用すると、必要なリソース一式を構築できます。
+    - [https://github.com/campbel2525/sample-apprunner-terraform](https://github.com/campbel2525/sample-apprunner-terraform)
+
+2.  **GitHub Secretsの設定**
+
+    Terraformのapply後に出力される以下の値を、GitHubリポジトリの`Environments` > `stg` (または `prod`) のSecretsに設定してください。
+
+    | Terraform Output Key             | GitHub Secret Name      |
+    | -------------------------------- | ----------------------- |
+    | `user_front_apprunner_arn`       | `APPRUNNER_SERVICE_ARN` |
+    | `user_front_created_ecr_name`    | `ECR_REPOSITORY_NAME`   |
+    | `user_front_github_actions_role` | `IAM_ROLE_ARN`          |
+    | `region_id`                      | `AWS_REGION`            |
+
+3.  **アプリケーションの環境変数の設定**
+
+    `apps/user_front/.env.example`を参考に、アプリケーションで必要な環境変数をAWS Systems Manager (SSM) のパラメータストアに設定してください。
+
+4.  **デプロイの実行**
+
+    `stg`ブランチに変更をプッシュすると、GitHub Actionsのワークフローが実行され、ステージング環境に自動でデプロイされます。

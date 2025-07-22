@@ -37,9 +37,13 @@ jobs:
         with:
           node-version: '22'  # Node.js バージョンを設定
 
-      - name: Install dependencies
+      - name: Install root & workspaces
         run: |
           npm install --workspaces  # すべてのワークスペース依存モジュールをインストール
+
+      - name: Install user_front dependencies
+        run: |
+          npm --workspace=apps/user_front install  # user_front の依存モジュールを個別インストール
 
       - name: Build user_front
         run: |
