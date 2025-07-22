@@ -56,7 +56,6 @@ jobs:
           URI=${{ steps.login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
           docker build -t $URI -f docker/aws/user_front/Dockerfile .
           docker push $URI
-          # ↓ こちらでステップ出力にセットする
           echo "image-uri=$URI" >> $GITHUB_OUTPUT
 
   deploy-lambda:
@@ -89,7 +88,7 @@ jobs:
   deploy-apprunner:
     environment: ${{ github.ref_name }}
     name: 🚀 Deploy to App Runner via AWS CLI
-    needs: [build-and-push, deploy-lambda] # <-- 修正箇所
+    needs: [build-and-push, deploy-lambda]
     runs-on: ubuntu-latest
 
     steps:
@@ -113,24 +112,37 @@ jobs:
           SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
           REGION="${{ vars.AWS_REGION }}"
           echo "Waiting for service to become stable..."
-
-          # タイムアウトを設定（例: 10分 = 600秒）
           for i in $(seq 1 60); do
             STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --region "$REGION" | jq -r '.Service.Status')
             echo "Current status: $STATUS"
-
             if [ "$STATUS" = "RUNNING" ]; then
               echo "✅ Service is stable and running."
-              exit 0
+              break
             fi
-
             if [ "$STATUS" = "CREATE_FAILED" ] || [ "$STATUS" = "DELETE_FAILED" ]; then
-               echo "❌ Service entered a failed state."
-               exit 1
+              echo "❌ Service entered a failed state."
+              exit 1
             fi
-
             sleep 10
           done
 
-          echo "❌ Timed out waiting for service to become stable."
-          exit 1
+      - name: Verify Deployed Image Tag
+        run: |
+          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
+          REGION="${{ vars.AWS_REGION }}"
+          EXPECTED="${{ needs.build-and-push.outputs.image-uri }}"
+
+          CURRENT=$(aws apprunner describe-service \
+            --service-arn "$SERVICE_ARN" \
+            --region "$REGION" \
+            | jq -r '.Service.SourceConfiguration.ImageRepository.ImageIdentifier')
+
+          echo "🔍 Expected Image: $EXPECTED"
+          echo "🔍 Deployed Image: $CURRENT"
+
+          if [ "$CURRENT" != "$EXPECTED" ]; then
+            echo "❌ Deployed image does not match expected tag. Failing job."
+            exit 1
+          fi
+
+          echo "✅ Deployed image matches expected tag."
