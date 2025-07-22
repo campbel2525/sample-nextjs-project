@@ -27,47 +27,39 @@ jobs:
       image-uri: ${{ steps.push.outputs.image-uri }}  # プッシュしたイメージ URI を出力
 
     steps:
-        # リポジトリのコードを完全履歴つきでチェックアウト
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # 完全履歴つきでコードを取得
 
-      # Node.js 環境をセットアップ
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22'
+          node-version: '22'  # Node.js バージョンを設定
 
-      # 依存モジュールをインストールし、Next.js アプリケーションをビルド
       - name: Install & Build
         run: |
-          npm ci
-          npm run build
+          npm install --workspaces  # ワークスペース全体の依存インストール
+          npm run build             # Next.js アプリをビルド
 
-      # OIDC を使って AWS の IAM ロールを Assume し、認証情報を設定
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.IAM_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}  # AWS 認証情報を設定 via OIDC
 
-      # ECR への Docker プッシュ用に認証トークンを取得
       - name: Login to ECR
         id: login
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@v2  # ECR プッシュ用認証取得
 
       - name: Build & Push Docker Image
         id: push
         run: |
           IMAGE_TAG=${{ github.sha }}
           URI=${{ steps.login.outputs.registry }}/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
-          # Docker イメージをビルド（指定の Dockerfile を利用）
-          docker build -t $URI -f docker/aws/user_front/Dockerfile .
-          # ビルドしたイメージを ECR にプッシュ
-          docker push $URI
-          # 次ジョブにイメージ URI を渡す
-          echo "::set-output name=image-uri::$URI"
+          docker build -t $URI -f docker/aws/user_front/Dockerfile .  # Docker イメージをビルド
+          docker push $URI                                        # ECR にプッシュ
+          echo "::set-output name=image-uri::$URI"               # 出力変数にセット
 
   deploy-lambda:
     name: 🛠 Deploy & Invoke Lambda (Migrations)
@@ -75,24 +67,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # AWS 認証情報を再設定
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.IAM_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}  # 再度 AWS 認証情報を設定
 
       - name: Update Lambda from ECR Image
         run: |
-          # ECR にプッシュ済みイメージを使って Lambda 関数をコンテナデプロイ
-          aws lambda update-function-code \
+          aws lambda update-function-code \  # ECR イメージで Lambda を更新
             --function-name "${{ env.MIGRATION_LAMBDA_NAME }}" \
             --image-uri "${{ needs.build-and-push.outputs.image-uri }}"
 
       - name: Invoke Migrations Lambda
         run: |
-          # 非同期でマイグレーション用 Lambda を実行
-          aws lambda invoke \
+          aws lambda invoke \  # マイグレーション用 Lambda を非同期実行
             --function-name "${{ env.MIGRATION_LAMBDA_NAME }}" \
             --invocation-type Event \
             --payload '{}' \
@@ -104,17 +93,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # AWS 認証情報を再設定
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.IAM_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}  # 再度 AWS 認証情報を設定
 
-      # App Runner サービスにイメージをデプロイし、安定化まで待機
       - name: Deploy App Runner Service
         uses: aws-actions/aws-app-runner-deploy-service@v1
         with:
           service-arn: ${{ env.APP_RUNNER_SERVICE_ARN }}
           image-identifier: ${{ needs.build-and-push.outputs.image-uri }}
-          wait-for-service-stability: true
+          wait-for-service-stability: true  # デプロイ安定化まで待機
