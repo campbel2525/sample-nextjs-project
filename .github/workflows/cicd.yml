@@ -35,9 +35,10 @@ jobs:
       - name: Build user_front
         run: npm --workspace=apps/user_front run build
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          audience: sts.amazonaws.com
           role-to-assume: ${{ vars.IAM_ROLE }}
           aws-region:    ${{ vars.AWS_REGION }}
 
@@ -52,7 +53,6 @@ jobs:
           IMAGE_URI=${{ steps.login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
           docker build -t $IMAGE_URI -f docker/aws/user_front/Dockerfile .
           docker push $IMAGE_URI
-          # ★ ここで必ず GITHUB_OUTPUT に書き込む
           echo "image-uri=$IMAGE_URI" >> $GITHUB_OUTPUT
 
   deploy-lambda:
@@ -61,9 +61,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          audience: sts.amazonaws.com
           role-to-assume: ${{ vars.IAM_ROLE }}
           aws-region:    ${{ vars.AWS_REGION }}
 
@@ -74,7 +75,7 @@ jobs:
         run: |
           aws lambda update-function-code \
             --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
-            --image-uri "${{ needs.build-and-push.outputs.image-uri }}"
+            --image-uri    "${{ needs.build-and-push.outputs.image-uri }}"
 
       - name: Invoke Migrations Lambda
         run: |
@@ -92,9 +93,10 @@ jobs:
       IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
 
     steps:
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          audience: sts.amazonaws.com
           role-to-assume: ${{ vars.IAM_ROLE }}
           aws-region:    ${{ vars.AWS_REGION }}
 
