@@ -18,7 +18,6 @@ jobs:
     env:
       ECR_REPOSITORY_NAME: ${{ vars.ECR_REPOSITORY_NAME }}
     name: 🚧 Build & Push to ECR    # 環境変数はEnvironments→Environment variablesで管理
-    name: 🚧 Build & Push to ECR
     runs-on: ubuntu-latest
     outputs:
       image-uri: ${{ steps.push.outputs.image-uri }}  # プッシュしたイメージ URI を出力
