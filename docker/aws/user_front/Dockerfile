@@ -47,4 +47,5 @@ COPY --from=builder /app/apps/user_front/.next/static ./.next/static/
 COPY --from=builder /app/packages/db/prisma ./prisma/
 
 # アプリケーション起動のみ
+COPY --from=builder /app/apps/user_front/.next/standalone ./
 CMD ["node", "server.js"]
