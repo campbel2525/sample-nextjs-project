@@ -88,7 +88,7 @@ jobs:
 
   deploy-apprunner:
     environment: ${{ github.ref_name }}
-    name: 🚀 Deploy to App Runner
+    name: 🚀 Deploy to App Runner via AWS CLI
     needs: deploy-lambda
     runs-on: ubuntu-latest
 
@@ -100,8 +100,14 @@ jobs:
           aws-region:    ${{ vars.AWS_REGION }}
 
       - name: Deploy App Runner Service
-        uses: aws-actions/aws-app-runner-deploy-service@v1
-        with:
-          service-arn:      ${{ vars.APPRUNNER_SERVICE_ARN }}
-          image-identifier: ${{ needs.build-and-push.outputs.image-uri }}
-          wait-for-service-stability: true
+        run: |
+          aws apprunner update-service \
+            --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
+            --source-configuration ImageRepository={ImageIdentifier="${{ needs.build-and-push.outputs.image-uri }}",ImageRepositoryType=ECR} \
+            --region "${{ vars.AWS_REGION }}"
+
+      - name: Wait for App Runner Service Stability
+        run: |
+          aws apprunner wait service-stable \
+            --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
+            --region "${{ vars.AWS_REGION }}"
