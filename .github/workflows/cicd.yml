@@ -110,6 +110,27 @@ jobs:
 
       - name: Wait for App Runner Service to Stabilize
         run: |
-          aws apprunner wait service-stable \
-            --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
-            --region "${{ vars.AWS_REGION }}"
+          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
+          REGION="${{ vars.AWS_REGION }}"
+          echo "Waiting for service to become stable..."
+
+          # タイムアウトを設定（例: 10分 = 600秒）
+          for i in $(seq 1 60); do
+            STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --region "$REGION" | jq -r '.Service.Status')
+            echo "Current status: $STATUS"
+
+            if [ "$STATUS" = "RUNNING" ]; then
+              echo "✅ Service is stable and running."
+              exit 0
+            fi
+
+            if [ "$STATUS" = "CREATE_FAILED" ] || [ "$STATUS" = "DELETE_FAILED" ]; then
+               echo "❌ Service entered a failed state."
+               exit 1
+            fi
+
+            sleep 10
+          done
+
+          echo "❌ Timed out waiting for service to become stable."
+          exit 1
