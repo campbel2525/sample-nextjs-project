@@ -12,15 +12,9 @@ permissions:
   id-token: write   # OIDC トークン発行を許可
   contents: read    # リポジトリ内容のチェックアウトを許可
 
-env:
-  AWS_REGION:             ${{ vars.AWS_REGION }}             # デプロイ先の AWS リージョン
-  IAM_ROLE_ARN:           ${{ vars.IAM_ROLE_ARN }}           # GitHub Actions 用に Assume する IAM ロールの ARN
-  ECR_REPOSITORY_NAME:    ${{ vars.ECR_REPOSITORY_NAME }}    # Docker イメージを格納する ECR リポジトリ名
-  MIGRATION_LAMBDA_NAME:  ${{ vars.MIGRATION_LAMBDA_NAME }}  # マイグレーション実行用の Lambda 関数名
-  APP_RUNNER_SERVICE_ARN: ${{ vars.APP_RUNNER_SERVICE_ARN }} # App Runner サービスの ARN
-
 jobs:
   build-and-push:
+    environment: ${{ github.ref_name }}    # 環境変数はEnvironments→Environment variablesで管理
     name: 🚧 Build & Push to ECR
     runs-on: ubuntu-latest
     outputs:
@@ -30,45 +24,46 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 完全履歴つきでコードを取得
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22'  # Node.js バージョンを設定
+          node-version: '22'
 
       - name: Install root & workspaces
         run: |
-          npm install --workspaces  # すべてのワークスペース依存モジュールをインストール
+          npm install --workspaces
 
       - name: Install user_front dependencies
         run: |
-          npm --workspace=apps/user_front install  # user_front の依存モジュールを個別インストール
+          npm --workspace=apps/user_front install
 
       - name: Build user_front
         run: |
-          npm --workspace=apps/user_front run build  # user_front ワークスペースのみビルド
+          npm --workspace=apps/user_front run build
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.IAM_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}  # AWS 認証情報を設定 via OIDC
+          aws-region:    ${{ env.AWS_REGION }}
 
       - name: Login to ECR
         id: login
-        uses: aws-actions/amazon-ecr-login@v2  # ECR プッシュ用認証取得
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build & Push Docker Image
         id: push
         run: |
           IMAGE_TAG=${{ github.sha }}
           URI=${{ steps.login.outputs.registry }}/${{ env.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
-          docker build -t $URI -f docker/aws/user_front/Dockerfile .  # Docker イメージをビルド
-          docker push $URI                                        # ECR にプッシュ
-          echo "::set-output name=image-uri::$URI"               # 出力変数にセット
+          docker build -t $URI -f docker/aws/user_front/Dockerfile .
+          docker push $URI
+          echo "::set-output name=image-uri::$URI"
 
   deploy-lambda:
+    environment: ${{ github.ref_name }}
     name: 🛠 Deploy & Invoke Lambda (Migrations)
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -78,23 +73,24 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.IAM_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}  # 再度 AWS 認証情報を設定
+          aws-region:    ${{ env.AWS_REGION }}
 
       - name: Update Lambda from ECR Image
         run: |
-          aws lambda update-function-code \  # ECR イメージで Lambda を更新
+          aws lambda update-function-code \
             --function-name "${{ env.MIGRATION_LAMBDA_NAME }}" \
             --image-uri "${{ needs.build-and-push.outputs.image-uri }}"
 
       - name: Invoke Migrations Lambda
         run: |
-          aws lambda invoke \  # マイグレーション用 Lambda を非同期実行
+          aws lambda invoke \
             --function-name "${{ env.MIGRATION_LAMBDA_NAME }}" \
             --invocation-type Event \
             --payload '{}' \
             /dev/stdout
 
   deploy-apprunner:
+    environment: ${{ github.ref_name }}
     name: 🚀 Deploy to App Runner
     needs: deploy-lambda
     runs-on: ubuntu-latest
@@ -104,11 +100,11 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.IAM_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}  # 再度 AWS 認証情報を設定
+          aws-region:    ${{ env.AWS_REGION }}
 
       - name: Deploy App Runner Service
         uses: aws-actions/aws-app-runner-deploy-service@v1
         with:
-          service-arn: ${{ env.APP_RUNNER_SERVICE_ARN }}
+          service-arn:      ${{ env.APP_RUNNER_SERVICE_ARN }}
           image-identifier: ${{ needs.build-and-push.outputs.image-uri }}
-          wait-for-service-stability: true  # デプロイ安定化まで待機
+          wait-for-service-stability: true
