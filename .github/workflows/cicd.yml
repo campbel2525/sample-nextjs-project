@@ -56,7 +56,7 @@ jobs:
           URI=${{ steps.login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
           docker build -t $URI -f docker/aws/user_front/Dockerfile .
           docker push $URI
-          # ↓ こちらでステップ出力にセットする
+          # 新仕様: $GITHUB_OUTPUT に書き込んで「push」ステップの出力にセット
           echo "image-uri=$URI" >> $GITHUB_OUTPUT
 
   deploy-lambda:
@@ -98,6 +98,10 @@ jobs:
         with:
           role-to-assume: ${{ vars.IAM_ROLE }}
           aws-region:    ${{ vars.AWS_REGION }}
+
+      - name: Debug IMAGE_URI
+        run: |
+          echo "→ image-uri from build-and-push: '${{ needs.build-and-push.outputs.image-uri }}'"
 
       - name: Deploy App Runner Service
         run: |
