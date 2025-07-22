@@ -56,7 +56,6 @@ jobs:
           URI=${{ steps.login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
           docker build -t $URI -f docker/aws/user_front/Dockerfile .
           docker push $URI
-          # ↓ こちらでステップ出力にセットする
           echo "image-uri=$URI" >> $GITHUB_OUTPUT
 
   deploy-lambda:
@@ -88,8 +87,8 @@ jobs:
 
   deploy-apprunner:
     environment: ${{ github.ref_name }}
-    name: 🚀 Deploy to App Runner via AWS CLI
-    needs: [build-and-push, deploy-lambda] # <-- 修正箇所
+    name: 🚀 Deploy and Verify App Runner
+    needs: [build-and-push, deploy-lambda]
     runs-on: ubuntu-latest
 
     steps:
@@ -101,36 +100,45 @@ jobs:
 
       - name: Deploy App Runner Service
         run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
-          IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
           aws apprunner update-service \
-            --service-arn "$SERVICE_ARN" \
-            --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}" \
+            --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
+            --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"${{ needs.build-and-push.outputs.image-uri }}\",\"ImageRepositoryType\":\"ECR\"}}" \
             --region "${{ vars.AWS_REGION }}"
 
-      - name: Wait for App Runner Service to Stabilize
+      # --- ここからが修正・強化した部分 ---
+      - name: Wait for Deployment Operation to Complete
         run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
-          REGION="${{ vars.AWS_REGION }}"
-          echo "Waiting for service to become stable..."
+          # aws-waiterをダウンロードして実行権限を付与
+          curl -L -o /usr/local/bin/aws-waiter https://github.com/get-bridge/aws-waiter/releases/download/v2.0.0/aws-waiter_linux_amd64
+          chmod +x /usr/local/bin/aws-waiter
 
-          # タイムアウトを設定（例: 10分 = 600秒）
-          for i in $(seq 1 60); do
-            STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --region "$REGION" | jq -r '.Service.Status')
-            echo "Current status: $STATUS"
+          echo "Waiting for the latest deployment operation to complete..."
+          aws-waiter \
+            --service apprunner \
+            --operation ListOperations \
+            --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
+            --query "OperationSummaryList[0].Status" \
+            --wait-for SUCCEEDED \
+            --fail-on FAILED \
+            --timeout 600
+          echo "✅ Deployment operation finished."
 
-            if [ "$STATUS" = "RUNNING" ]; then
-              echo "✅ Service is stable and running."
-              exit 0
-            fi
+      - name: Verify Deployed Image
+        run: |
+          EXPECTED_IMAGE="${{ needs.build-and-push.outputs.image-uri }}"
 
-            if [ "$STATUS" = "CREATE_FAILED" ] || [ "$STATUS" = "DELETE_FAILED" ]; then
-               echo "❌ Service entered a failed state."
-               exit 1
-            fi
+          # App Runnerで現在実行中のイメージを取得
+          DEPLOYED_IMAGE=$(aws apprunner describe-service \
+            --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
+            | jq -r '.Service.SourceConfiguration.ImageRepository.ImageIdentifier')
 
-            sleep 10
-          done
+          echo "Expected image: $EXPECTED_IMAGE"
+          echo "Deployed image: $DEPLOYED_IMAGE"
 
-          echo "❌ Timed out waiting for service to become stable."
-          exit 1
+          # 期待するイメージと実際にデプロイされたイメージを比較
+          if [ "$DEPLOYED_IMAGE" == "$EXPECTED_IMAGE" ]; then
+            echo "✅ Successfully verified that the correct image is deployed."
+          else
+            echo "❌ Verification failed! Deployed image does not match the expected image."
+            exit 1
+          fi
