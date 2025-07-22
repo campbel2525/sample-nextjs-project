@@ -104,7 +104,8 @@ jobs:
           echo "IMAGE_URI=${{ steps.login-ecr-2.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:${{ github.sha }}" >> $GITHUB_ENV
 
       - name: Debug IMAGE_URI
-        run: echo "→ IMAGE_URI: $IMAGE_URI"
+        run: |
+          echo "→ IMAGE_URI: $IMAGE_URI"
 
       - name: Deploy App Runner Service
         run: |
