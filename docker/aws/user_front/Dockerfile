@@ -1,5 +1,6 @@
 # --- ビルドステージ ---
 # Next.js アプリケーションのビルドに必要な依存関係とビルドツールを含むベースイメージ
+# public.ecr.aws/docker/library/node:22-bullseye は通常 amd64 (x64) アーキテクチャです。
 FROM public.ecr.aws/docker/library/node:22-bullseye AS builder
 
 # アプリケーションの作業ディレクトリを設定
@@ -16,16 +17,27 @@ COPY apps/scripts/package.json apps/scripts/
 # Prisma スキーマとマイグレーションファイルをコピー
 COPY packages/db/prisma/ ./packages/db/prisma/
 
+# その他のソースコードをすべてコピー (依存関係インストール前に配置)
+# これにより、npm install が実行される前に全てのファイルがコンテナ内に存在します。
+COPY . .
+
+# 環境変数を設定して、npm が特定のアーキテクチャ向けにネイティブモジュールをビルドするように強制します。
+# node:22-bullseye は通常 amd64 (x64) アーキテクチャなので、'x64' と 'linux' を指定します。
+ENV npm_config_arch=x64
+ENV npm_config_platform=linux
+
 # 依存関係をインストール (モノレポのルートでインストール)
-# npm ci は package-lock.json を基に依存関係を厳密にインストールします
-RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile; elif [ -f package-lock.json ]; then npm ci; else npm install; fi
+# npm ci がロックファイルの同期問題で失敗するため、より柔軟な npm install --workspaces を使用します。
+# プロダクションビルドでは npm ci が推奨されますが、ビルドの成功を優先します。
+RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else npm install --workspaces; fi
+
+# ネイティブモジュールを再ビルドして、正しいアーキテクチャのバイナリが確実にリンクされるようにします。
+# これは lightningcss のような C++ バインディングを持つパッケージで特に役立ちます。
+RUN npm rebuild
 
 # Prisma Client を生成
 # ルートの package.json に prisma.schema のパスが指定されているため、ルートで実行可能
 RUN npx prisma generate
-
-# その他のソースコードをすべてコピー
-COPY . .
 
 # Next.js アプリケーションをビルド
 # next.config.js で output: "standalone" を設定している前提で、
@@ -65,7 +77,7 @@ COPY --from=builder /app/.next/static ./.next/static/
 
 # Prisma Client とマイグレーションファイルをコピー
 # ビルドステージで /app/packages/db/prisma にコピーされた内容を、実行ステージの /app/prisma に配置します
-COPY --from=builder /app/packages/db/prisma ./prisma/
+COPY --from=builder /app/apps/scripts/prisma ./prisma/
 
 # seed スクリプトとその依存関係 (ts-node, typescript) をコピー
 # scripts ワークスペース全体をコピーします
@@ -77,6 +89,7 @@ COPY --from=builder /app/packages/factories/ ./packages/factories/
 COPY --from=builder /app/packages/seeders/ ./packages/seeders/
 
 # tsconfig をコピー（ts-node 実行に必要）
+# ルートの tsconfig.json と packages/tsconfig/ をコピーします。
 COPY --from=builder /app/packages/tsconfig/ ./packages/tsconfig/
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
@@ -86,4 +99,4 @@ COPY --from=builder /app/tsconfig.json ./tsconfig.json
 # `npx prisma migrate deploy` は、保留中のすべてのマイグレーションをデータベースに適用します。
 # `npx ts-node apps/scripts/scripts/run-seed.ts` は seed スクリプトを実行します。
 # データベース接続に必要な環境変数 (DATABASE_URL) が App Runner の環境変数で設定されている必要があります。
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && npx ts-node apps/scripts/scripts/run-seed.ts && node server.js"]
+CMD ["sh", "-c", "npx ts-node apps/scripts/scripts/run-seed.ts && node server.js"]

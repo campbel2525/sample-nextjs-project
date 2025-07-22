@@ -108,7 +108,7 @@ push: ## push
 	git commit -m "Commit at $$(date +'%Y-%m-%d %H:%M:%S')"
 	git push origin head
 # git push origin main:prod
-# 	git push origin main:stg
+	git push origin main:stg
 
 # github-init:
 # # ビルド

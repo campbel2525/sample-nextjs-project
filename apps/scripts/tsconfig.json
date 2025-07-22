@@ -7,6 +7,6 @@
       "@my-monorepo/*": ["../../packages/*"]
     }
   },
-  "include": ["prisma/**/*.ts", "seeders/**/*.ts", "scripts/**/*.ts"],
+  "include": ["prisma/**/*.ts", "seeders/**/*.ts", "commands/**/*.ts"],
   "exclude": ["node_modules"]
 }
