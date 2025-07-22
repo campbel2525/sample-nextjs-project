@@ -3,7 +3,7 @@
 このプロジェクトは、Next.jsとPrismaを使用したモノレポ構成のサンプルです。
 開発環境はDockerで構築されており、`make`コマンドで簡単に操作できます。
 
-## ✨ 主要技術
+## 主要技術
 
 - **Frontend**: Next.js, React, TypeScript
 - **Backend**: Next.js (API Routes)
@@ -13,7 +13,7 @@
 - **CI/CD**: GitHub Actions, AWS App Runner
 - **Lint/Format**: ESLint, Prettier
 
-## 🚀 ローカル開発環境のセットアップ
+## ローカル開発環境のセットアップ
 
 1.  **環境変数の設定**
 
@@ -38,7 +38,7 @@
     - **Email**: `user1@example.com`
     - **Password**: `test1`
 
-## 🛠️ 便利なコマンド (`Makefile`)
+## 便利なコマンド (Makefile)
 
 このプロジェクトでは、煩雑な`docker compose`コマンドをラップした`make`コマンドを提供しています。
 
@@ -63,15 +63,15 @@
 npm install <ライブラリ名> -w user_front
 ```
 
-## 📁 ディレクトリ構成
+## ディレクトリ構成
 
-このリポジトリは、[Turborepo](https://turbo.build/repo)にインスパイアされたモノレポ構成を採用しています。
+このリポジトリは、npm workspacesを利用したモノレポ構成を採用しています。
 
 - `apps`: 各アプリケーションが格納されています。
   - `user_front`: Next.jsで構築されたフロントエンドアプリケーションです。
   - `scripts`: DBのマイグレーションやシード投入など、開発用のスクリプトが格納されています。
 - `packages`: 複数のアプリケーションで共有されるパッケージが格納されています。
-  - `db`: Prisma clientとスキーマ定義が格納されています。
+  - `db`: Prisma client、スキーマ定義、マイグレーションファイルが格納されています。
   - `factories`: テストデータを作成するためのFactoryBotのような機能を提供します。
   - `seeders`: データベースに初期データを投入するためのシーダーが格納されています。
   - `tsconfig`: 共有のTypeScript設定が格納されています。
@@ -86,6 +86,8 @@ npm install <ライブラリ名> -w user_front
 │   └── user_front
 ├── packages
 │   ├── db
+│   │   └── prisma
+│   │       └── migrations
 │   ├── factories
 │   ├── seeders
 │   └── tsconfig
@@ -99,7 +101,7 @@ npm install <ライブラリ名> -w user_front
 └── README.md
 ```
 
-## 🔄 CI/CD
+## CI/CD
 
 GitHub Actionsを利用して、特定のブランチへのプッシュをトリガーにAWS App Runnerへ自動デプロイされます。
 
