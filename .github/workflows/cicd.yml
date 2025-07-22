@@ -13,7 +13,6 @@ permissions:
 
 jobs:
   build-and-push:
-    environment: ${{ github.ref_name }}
     name: 🚧 Build & Push to ECR
     runs-on: ubuntu-latest
     outputs:
@@ -30,11 +29,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install root & workspaces
+      - name: Install dependencies
         run: npm install --workspaces
-
-      - name: Install user_front dependencies
-        run: npm --workspace=apps/user_front install
 
       - name: Build user_front
         run: npm --workspace=apps/user_front run build
@@ -56,11 +52,10 @@ jobs:
           IMAGE_URI=${{ steps.login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
           docker build -t $IMAGE_URI -f docker/aws/user_front/Dockerfile .
           docker push $IMAGE_URI
-          # 新仕様: GITHUB_OUTPUT へ書き込んで出力にセット
+          # ★ ここで必ず GITHUB_OUTPUT に書き込む
           echo "image-uri=$IMAGE_URI" >> $GITHUB_OUTPUT
 
   deploy-lambda:
-    environment: ${{ github.ref_name }}
     name: 🛠 Deploy & Invoke Lambda (Migrations)
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -72,14 +67,14 @@ jobs:
           role-to-assume: ${{ vars.IAM_ROLE }}
           aws-region:    ${{ vars.AWS_REGION }}
 
-      - name: Debug image-uri
-        run: echo "Lambda will use image-uri = '${{ needs.build-and-push.outputs.image-uri }}'"
+      - name: Debug IMAGE_URI
+        run: echo "Lambda will use image-uri='${{ needs.build-and-push.outputs.image-uri }}'"
 
       - name: Update Lambda from ECR Image
         run: |
           aws lambda update-function-code \
             --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
-            --image-uri    "${{ needs.build-and-push.outputs.image-uri }}"
+            --image-uri "${{ needs.build-and-push.outputs.image-uri }}"
 
       - name: Invoke Migrations Lambda
         run: |
@@ -87,13 +82,14 @@ jobs:
             --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
             --invocation-type Event \
             --payload '{}' \
-            /dev/stdout
+            output.json && cat output.json
 
   deploy-apprunner:
-    environment: ${{ github.ref_name }}
     name: 🚀 Deploy to App Runner via AWS CLI
     needs: deploy-lambda
     runs-on: ubuntu-latest
+    env:
+      IMAGE_URI: ${{ needs.build-and-push.outputs.image-uri }}
 
     steps:
       - name: Configure AWS Credentials
@@ -102,14 +98,14 @@ jobs:
           role-to-assume: ${{ vars.IAM_ROLE }}
           aws-region:    ${{ vars.AWS_REGION }}
 
-      - name: Debug image-uri
-        run: echo "App Runner will use image-uri = '${{ needs.build-and-push.outputs.image-uri }}'"
+      - name: Debug IMAGE_URI
+        run: echo "App Runner will use image-uri='$IMAGE_URI'"
 
       - name: Deploy App Runner Service
         run: |
           aws apprunner update-service \
             --service-arn "${{ vars.APPRUNNER_SERVICE_ARN }}" \
-            --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"${{ needs.build-and-push.outputs.image-uri }}\",\"ImageRepositoryType\":\"ECR\"}}" \
+            --source-configuration '{"ImageRepository":{"ImageIdentifier":"'"$IMAGE_URI"'","ImageRepositoryType":"ECR"}}' \
             --region "${{ vars.AWS_REGION }}"
 
       - name: Wait for App Runner Service to Stabilize
