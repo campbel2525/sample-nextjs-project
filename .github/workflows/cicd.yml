@@ -15,6 +15,9 @@ permissions:
 jobs:
   build-and-push:
     environment: ${{ github.ref_name }}    # 環境変数はEnvironments→Environment variablesで管理
+    env:
+      ECR_REPOSITORY_NAME: ${{ vars.ECR_REPOSITORY_NAME }}
+    name: 🚧 Build & Push to ECR    # 環境変数はEnvironments→Environment variablesで管理
     name: 🚧 Build & Push to ECR
     runs-on: ubuntu-latest
     outputs:
@@ -64,6 +67,9 @@ jobs:
 
   deploy-lambda:
     environment: ${{ github.ref_name }}
+    env:
+      MIGRATION_LAMBDA_NAME: ${{ vars.MIGRATION_LAMBDA_NAME }}
+    name: 🛠 Deploy & Invoke Lambda (Migrations)
     name: 🛠 Deploy & Invoke Lambda (Migrations)
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -91,6 +97,9 @@ jobs:
 
   deploy-apprunner:
     environment: ${{ github.ref_name }}
+    env:
+      APP_RUNNER_SERVICE_ARN: ${{ vars.APP_RUNNER_SERVICE_ARN }}
+    name: 🚀 Deploy to App Runner
     name: 🚀 Deploy to App Runner
     needs: deploy-lambda
     runs-on: ubuntu-latest
