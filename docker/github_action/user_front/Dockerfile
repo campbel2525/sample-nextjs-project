@@ -31,7 +31,6 @@ FROM public.ecr.aws/docker/library/node:22-bullseye-slim AS runner
 # 非 root ユーザー
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
-USER nextjs
 
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -39,13 +38,19 @@ ENV HOSTNAME="0.0.0.0"
 ENV PORT=3000
 
 # Next.js ビルド成果物を配置
-COPY --from=builder /app/apps/user_front/.next/standalone ./
-COPY --from=builder /app/apps/user_front/public ./public/
-COPY --from=builder /app/apps/user_front/.next/static ./.next/static/
+# standalone の中身をコピー
+COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next/standalone/ ./
+# public と .next ディレクトリ全体をコピー
+COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next ./.next
 
-# Prisma Client（クライアントのみ、マイグレーションは Lambda 側で実行）
+# server.js をルートに移動してパスの不整合を解消
+RUN mv /app/apps/user_front/server.js /app/server.js
+
+# Prisma Client が参照するスキーマファイル
 COPY --from=builder /app/packages/db/prisma ./prisma/
 
-# アプリケーション起動のみ
-COPY --from=builder /app/apps/user_front/.next/standalone ./
+USER nextjs
+
+# アプリケーション起動
 CMD ["node", "server.js"]

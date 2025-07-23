@@ -54,7 +54,7 @@ jobs:
         run: |
           IMAGE_TAG=${{ github.sha }}
           URI=${{ steps.login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
-          docker build -t $URI -f docker/aws/user_front/Dockerfile .
+          docker build -t $URI -f docker/github_action/user_front/Dockerfile .
           docker push $URI
           echo "image-uri=$URI" >> $GITHUB_OUTPUT
 
