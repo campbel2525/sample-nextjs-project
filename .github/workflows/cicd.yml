@@ -50,7 +50,7 @@ jobs:
         id: push
         run: |
           IMAGE_TAG=${{ github.sha }}
-          URI=${{ steps.login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
+          URI=${{ steps.login.outputs.registry }}/${{ vars.USER_FRONT_ECR_REPOSITORY_NAME }}:$IMAGE_TAG
           docker build -t $URI -f docker/github_action/user_front/Dockerfile .
           docker push $URI
           echo "image-uri=$URI" >> $GITHUB_OUTPUT
@@ -71,18 +71,61 @@ jobs:
       - name: Deploy App Runner Service
         id: deploy
         run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
+          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
           IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
+
+          # Debug output
+          echo "🔍 SERVICE_ARN: $SERVICE_ARN"
+          echo "🔍 IMAGE_URI: $IMAGE_URI"
+
+          # Validate required variables
+          if [ -z "$SERVICE_ARN" ]; then
+            echo "❌ SERVICE_ARN is empty. Please check the USER_FRONT_APPRUNNER_ARN variable in your environment."
+            exit 1
+          fi
+
+          if [ -z "$IMAGE_URI" ]; then
+            echo "❌ IMAGE_URI is empty. Please check the previous build step."
+            exit 1
+          fi
+
           SOURCE_CONFIGURATION="{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}"
+          echo "🔍 SOURCE_CONFIGURATION: $SOURCE_CONFIGURATION"
+
           OPERATION_ID=$(aws apprunner start-deployment \
             --service-arn "$SERVICE_ARN" \
             --source-configuration "$SOURCE_CONFIGURATION" | jq -r '.OperationId')
+
+          echo "🔍 OPERATION_ID: $OPERATION_ID"
+
+          # Validate operation ID
+          if [ -z "$OPERATION_ID" ] || [ "$OPERATION_ID" = "null" ]; then
+            echo "❌ Failed to get OPERATION_ID from start-deployment command."
+            exit 1
+          fi
+
           echo "operation-id=$OPERATION_ID" >> $GITHUB_OUTPUT
 
       - name: Wait for App Runner Deployment
         run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
+          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
           OPERATION_ID="${{ steps.deploy.outputs.operation-id }}"
+
+          # Debug output
+          echo "🔍 SERVICE_ARN: $SERVICE_ARN"
+          echo "🔍 OPERATION_ID: $OPERATION_ID"
+
+          # Validate required variables
+          if [ -z "$SERVICE_ARN" ]; then
+            echo "❌ SERVICE_ARN is empty. Please check the USER_FRONT_APPRUNNER_ARN variable in your environment."
+            exit 1
+          fi
+
+          if [ -z "$OPERATION_ID" ]; then
+            echo "❌ OPERATION_ID is empty. The previous deploy step may have failed."
+            exit 1
+          fi
+
           echo "Waiting for deployment to complete... (Operation ID: $OPERATION_ID)"
           for i in $(seq 1 60); do
             # Use list-operations to find the specific operation and get its status
@@ -114,7 +157,7 @@ jobs:
 
       - name: Verify Deployed Image Tag
         run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
+          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
           EXPECTED_IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
           # Give a few seconds for describe-service to reflect the new image
           sleep 5
