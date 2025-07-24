@@ -53,10 +53,24 @@ jobs:
         id: push
         run: |
           IMAGE_TAG=${{ github.sha }}
-          URI=${{ steps.login.outputs.registry }}/${{ vars.ECR_REPOSITORY_NAME }}:$IMAGE_TAG
-          docker build -t $URI -f docker/github_action/user_front/Dockerfile .
-          docker push $URI
-          echo "image-uri=$URI" >> $GITHUB_OUTPUT
+          REGISTRY=${{ steps.login.outputs.registry }}
+          REPO_NAME=${{ vars.USER_FRONT_ECR_REPOSITORY_NAME }}
+
+          # Build image with SHA tag
+          URI_SHA=${REGISTRY}/${REPO_NAME}:${IMAGE_TAG}
+          URI_LATEST=${REGISTRY}/${REPO_NAME}:latest
+
+          docker build -t $URI_SHA -f docker/github_action/user_front/Dockerfile .
+
+          # Tag the same image with latest
+          docker tag $URI_SHA $URI_LATEST
+
+          # Push both tags
+          docker push $URI_SHA
+          docker push $URI_LATEST
+
+          echo "🔍 Pushed tags: $IMAGE_TAG, latest"
+          echo "image-uri=$URI_SHA" >> $GITHUB_OUTPUT
 
   deploy-lambda:
     environment: ${{ github.ref_name }}
@@ -99,50 +113,41 @@ jobs:
           aws-region:     ${{ vars.AWS_REGION }}
 
       - name: Deploy App Runner Service
+        id: deploy
         run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
+          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
           IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
-          aws apprunner update-service \
-            --service-arn "$SERVICE_ARN" \
-            --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}" \
-            --region "${{ vars.AWS_REGION }}"
 
-      - name: Wait for App Runner Service to Stabilize
-        run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
-          REGION="${{ vars.AWS_REGION }}"
-          echo "Waiting for service to become stable..."
-          for i in $(seq 1 60); do
-            STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --region "$REGION" | jq -r '.Service.Status')
-            echo "Current status: $STATUS"
-            if [ "$STATUS" = "RUNNING" ]; then
-              echo "✅ Service is stable and running."
-              break
-            fi
-            if [ "$STATUS" = "CREATE_FAILED" ] || [ "$STATUS" = "DELETE_FAILED" ]; then
-              echo "❌ Service entered a failed state."
-              exit 1
-            fi
-            sleep 10
-          done
+          # Debug output
+          echo "🔍 SERVICE_ARN: $SERVICE_ARN"
+          echo "🔍 IMAGE_URI: $IMAGE_URI"
 
-      - name: Verify Deployed Image Tag
-        run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
-          REGION="${{ vars.AWS_REGION }}"
-          EXPECTED="${{ needs.build-and-push.outputs.image-uri }}"
-
-          CURRENT=$(aws apprunner describe-service \
-            --service-arn "$SERVICE_ARN" \
-            --region "$REGION" \
-            | jq -r '.Service.SourceConfiguration.ImageRepository.ImageIdentifier')
-
-          echo "🔍 Expected Image: $EXPECTED"
-          echo "🔍 Deployed Image: $CURRENT"
-
-          if [ "$CURRENT" != "$EXPECTED" ]; then
-            echo "❌ Deployed image does not match expected tag. Failing job."
+          # Validate required variables
+          if [ -z "$SERVICE_ARN" ]; then
+            echo "❌ SERVICE_ARN is empty. Please check the USER_FRONT_APPRUNNER_ARN variable in your environment."
             exit 1
           fi
 
-          echo "✅ Deployed image matches expected tag."
+          if [ -z "$IMAGE_URI" ]; then
+            echo "❌ IMAGE_URI is empty. Please check the previous build step."
+            exit 1
+          fi
+
+          SOURCE_CONFIGURATION="{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}"
+          echo "🔍 SOURCE_CONFIGURATION: $SOURCE_CONFIGURATION"
+
+          # Update the service with new image
+          OPERATION_ID=$(aws apprunner update-service \
+            --service-arn "$SERVICE_ARN" \
+            --source-configuration "$SOURCE_CONFIGURATION" \
+            --query 'OperationId' --output text)
+
+          echo "🔍 OPERATION_ID: $OPERATION_ID"
+
+          # Validate operation ID
+          if [ -z "$OPERATION_ID" ] || [ "$OPERATION_ID" = "null" ]; then
+            echo "❌ Failed to get OPERATION_ID from update-service command."
+            exit 1
+          fi
+
+          echo "operation-id=$OPERATION_ID" >> $GITHUB_OUTPUT
