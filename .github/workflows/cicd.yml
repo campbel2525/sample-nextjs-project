@@ -50,10 +50,24 @@ jobs:
         id: push
         run: |
           IMAGE_TAG=${{ github.sha }}
-          URI=${{ steps.login.outputs.registry }}/${{ vars.USER_FRONT_ECR_REPOSITORY_NAME }}:$IMAGE_TAG
-          docker build -t $URI -f docker/github_action/user_front/Dockerfile .
-          docker push $URI
-          echo "image-uri=$URI" >> $GITHUB_OUTPUT
+          REGISTRY=${{ steps.login.outputs.registry }}
+          REPO_NAME=${{ vars.USER_FRONT_ECR_REPOSITORY_NAME }}
+
+          # Build image with SHA tag
+          URI_SHA=${REGISTRY}/${REPO_NAME}:${IMAGE_TAG}
+          URI_LATEST=${REGISTRY}/${REPO_NAME}:latest
+
+          docker build -t $URI_SHA -f docker/github_action/user_front/Dockerfile .
+
+          # Tag the same image with latest
+          docker tag $URI_SHA $URI_LATEST
+
+          # Push both tags
+          docker push $URI_SHA
+          docker push $URI_LATEST
+
+          echo "🔍 Pushed tags: $IMAGE_TAG, latest"
+          echo "image-uri=$URI_SHA" >> $GITHUB_OUTPUT
 
   deploy-apprunner:
     environment: ${{ github.ref_name }}
