@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { APP_PAGES } from '@/lib/shared/config'
 
 export default function LoginForm() {
   const [email, setEmail] = useState('')
@@ -95,6 +97,18 @@ export default function LoginForm() {
         >
           {isLoading ? 'ログイン中...' : 'ログイン'}
         </button>
+      </div>
+
+      <div className="text-center">
+        <p className="text-sm text-gray-600">
+          アカウントをお持ちでない方は{' '}
+          <Link
+            href={APP_PAGES.auth.register}
+            className="font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            新規登録
+          </Link>
+        </p>
       </div>
     </form>
   )

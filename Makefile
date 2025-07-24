@@ -16,19 +16,18 @@ init: ## 開発環境構築(ビルド)
 # make c
 # ビルド
 	docker compose -f $(pf) -p $(pn) build --no-cache
-# 	docker compose -f $(pf) -p $(pn) down --volumes
-# 	docker compose -f $(pf) -p $(pn) up -d
-# 	./docker/local/wait-for-db.sh
-# 	docker compose -f $(pf) -p $(pn) exec -T db mysql -psecret < docker/local/setup.dev.sql
+	docker compose -f $(pf) -p $(pn) down --volumes
+	docker compose -f $(pf) -p $(pn) up -d
+	./docker/local/wait-for-db.sh
+	docker compose -f $(pf) -p $(pn) exec -T db mysql -psecret < docker/local/setup.dev.sql
 # ライブラリのインストール
-# 	make install
+	make install
 # DBリセット
-# 	make reset
+	make reset
 
 up: ## 開発環境up
 	docker compose -f $(pf) -p $(pn) up -d
 	make install
-
 
 down: ## 開発環境down
 	docker compose -f $(pf) -p $(pn) down

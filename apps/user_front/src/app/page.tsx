@@ -39,12 +39,20 @@ export default function Home() {
                   </button>
                 </>
               ) : (
-                <Link
-                  href="/auth/login"
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
-                >
-                  ログイン
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={APP_PAGES.auth.login}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                  >
+                    ログイン
+                  </Link>
+                  <Link
+                    href={APP_PAGES.auth.register}
+                    className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700"
+                  >
+                    新規登録
+                  </Link>
+                </div>
               )}
             </div>
           </div>
@@ -73,13 +81,24 @@ export default function Home() {
                   <p className="mt-2 text-sm text-gray-600">
                     このアプリケーションを使用するにはログインが必要です。
                   </p>
-                  <div className="mt-4">
+                  <div className="mt-4 flex gap-4">
                     <Link
-                      href="/auth/login"
+                      href={APP_PAGES.auth.login}
                       className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700"
                     >
-                      ログインページへ
+                      ログイン
                     </Link>
+                    <Link
+                      href={APP_PAGES.auth.register}
+                      className="inline-block px-6 py-3 bg-green-600 text-white font-medium rounded-md hover:bg-green-700"
+                    >
+                      新規登録
+                    </Link>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-xs text-gray-500">
+                      初めてご利用の方は「新規登録」から、既にアカウントをお持ちの方は「ログイン」からお進みください。
+                    </p>
                   </div>
                 </div>
               )}
