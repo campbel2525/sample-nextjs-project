@@ -151,3 +151,72 @@ jobs:
           fi
 
           echo "operation-id=$OPERATION_ID" >> $GITHUB_OUTPUT
+
+      - name: Wait for App Runner Deployment
+        run: |
+          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
+          OPERATION_ID="${{ steps.deploy.outputs.operation-id }}"
+
+          echo "Waiting for deployment to complete... (Operation ID: $OPERATION_ID)"
+
+          # Wait for deployment to complete
+          for i in $(seq 1 60); do
+            # Check service status
+            SERVICE_STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text)
+            echo "Current service status: $SERVICE_STATUS"
+
+            if [ "$SERVICE_STATUS" = "RUNNING" ]; then
+              echo "✅ Service is running."
+
+              # Additional check: verify the service is actually healthy
+              sleep 30  # Wait a bit for the service to fully start
+
+              # Check service status again after waiting
+              FINAL_STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text)
+              echo "Final service status: $FINAL_STATUS"
+
+              if [ "$FINAL_STATUS" = "RUNNING" ]; then
+                echo "✅ Deployment succeeded and service is stable."
+                break
+              else
+                echo "❌ Service became unstable after initial success."
+                exit 1
+              fi
+            fi
+
+            if [ "$SERVICE_STATUS" = "CREATE_FAILED" ] || [ "$SERVICE_STATUS" = "UPDATE_FAILED" ] || [ "$SERVICE_STATUS" = "DELETE_FAILED" ]; then
+              echo "❌ Deployment failed with status: $SERVICE_STATUS"
+
+              # Get more detailed error information
+              aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.ServiceUrl' --output text || echo "No service URL available"
+
+              exit 1
+            fi
+
+            if [ $i -eq 60 ]; then
+              echo "❌ Timeout waiting for deployment. Final status: $SERVICE_STATUS"
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+      - name: Verify Deployed Image
+        run: |
+          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
+          EXPECTED_IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
+
+          # Give a few seconds for describe-service to reflect the new image
+          sleep 5
+
+          CURRENT_IMAGE_URI=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" | jq -r '.Service.SourceConfiguration.ImageRepository.ImageIdentifier')
+
+          echo "🔍 Expected Image: $EXPECTED_IMAGE_URI"
+          echo "🔍 Deployed Image: $CURRENT_IMAGE_URI"
+
+          if [ "$CURRENT_IMAGE_URI" != "$EXPECTED_IMAGE_URI" ]; then
+            echo "❌ Deployed image does not match expected tag. Failing job."
+            exit 1
+          fi
+
+          echo "✅ Deployed image matches expected tag."

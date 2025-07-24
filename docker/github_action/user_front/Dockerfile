@@ -36,21 +36,19 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME="0.0.0.0"
 ENV PORT=3000
+ENV NODE_ENV=production
 
-# Next.js ビルド成果物を配置
-# standalone の中身をコピー
+# Next.js standalone ビルド成果物を正しく配置
 COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next/standalone/ ./
-# public と .next ディレクトリ全体をコピー
 COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next ./.next
-
-# server.js をルートに移動してパスの不整合を解消
-RUN mv /app/apps/user_front/server.js /app/server.js
+COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next/static ./.next/static
 
 # Prisma Client が参照するスキーマファイル
-COPY --from=builder /app/packages/db/prisma ./prisma/
+COPY --from=builder --chown=nextjs:nodejs /app/packages/db/prisma ./prisma/
 
 USER nextjs
 
-# アプリケーション起動
+EXPOSE 3000
+
+# アプリケーション起動（standaloneビルドのserver.jsを直接実行）
 CMD ["node", "server.js"]
