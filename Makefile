@@ -27,7 +27,7 @@ init: ## 開発環境構築(ビルド)
 
 up: ## 開発環境up
 	docker compose -f $(pf) -p $(pn) up -d
-	make install
+# 	make install
 
 
 down: ## 開発環境down
@@ -53,10 +53,7 @@ reset: ## DBのリセット
 # migrate: ## マイグレート
 
 install: ## インストール
-	docker compose -f $(pf) -p $(pn) exec -it scripts npm install
-	docker compose -f $(pf) -p $(pn) exec -it scripts npx prisma generate
 	docker compose -f $(pf) -p $(pn) exec -it user_front npm install
-	docker compose -f $(pf) -p $(pn) exec -it user_front npx prisma generate
 
 user-front-shell: ## shellに入る
 	docker compose -f $(pf) -p $(pn) exec -it user_front bash
@@ -78,7 +75,7 @@ check: ## コードフォーマット
 	docker compose -f $(pf) -p $(pn) exec -it user_front npx tsc --noEmit
 
 user-front-run: ## サーバー起動
-	docker compose -f $(pf) -p $(pn) exec -it user_front npm run dev -w user_front
+	docker compose -f $(pf) -p $(pn) exec -it user_front npm run dev
 
 # user_front-build-run: ## サーバー起動
 # 	docker compose -f $(pf) -p $(pn) exec -it user_front npm run build
@@ -108,7 +105,7 @@ push: ## push
 	git commit -m "Commit at $$(date +'%Y-%m-%d %H:%M:%S')"
 	git push origin head
 # git push origin main:prod
-	git push origin main:stg
+	git push origin demo:stg
 
 # github-init:
 # # ビルド

@@ -1,4 +1,4 @@
-name: CI/CD Pipeline Build → ECR → Lambda → App Runner
+name: CI/CD Pipeline Build → ECR → App Runner
 
 on:
   push:
@@ -28,16 +28,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22'
+          node-version: '20'
 
-      - name: Install root & workspaces
-        run: npm install --workspaces
+      - name: Install Dependencies
+        run: npm install --prefix apps/user_front
 
-      - name: Install user_front dependencies
-        run: npm --workspace=apps/user_front install
-
-      - name: Build user_front
-        run: npm --workspace=apps/user_front run build
+      - name: Build
+        run: npm run build --prefix apps/user_front
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -58,37 +55,10 @@ jobs:
           docker push $URI
           echo "image-uri=$URI" >> $GITHUB_OUTPUT
 
-  deploy-lambda:
-    environment: ${{ github.ref_name }}
-    name: 🛠 Deploy & Invoke Lambda (Migrations)
-    needs: build-and-push
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.IAM_ROLE }}
-          aws-region:     ${{ vars.AWS_REGION }}
-
-      - name: Update Lambda from ECR Image
-        run: |
-          aws lambda update-function-code \
-            --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
-            --image-uri     "${{ needs.build-and-push.outputs.image-uri }}"
-
-      - name: Invoke Migrations Lambda
-        run: |
-          aws lambda invoke \
-            --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
-            --invocation-type Event \
-            --payload '{}' \
-            /dev/stdout
-
   deploy-apprunner:
     environment: ${{ github.ref_name }}
     name: 🚀 Deploy to App Runner via AWS CLI
-    needs: [build-and-push, deploy-lambda]
+    needs: [build-and-push]
     runs-on: ubuntu-latest
 
     steps:
@@ -100,49 +70,14 @@ jobs:
 
       - name: Deploy App Runner Service
         run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
+          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
           IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
-          aws apprunner update-service \
+          aws apprunner start-deployment \
             --service-arn "$SERVICE_ARN" \
-            --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}" \
-            --region "${{ vars.AWS_REGION }}"
+            --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}"
 
       - name: Wait for App Runner Service to Stabilize
         run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
-          REGION="${{ vars.AWS_REGION }}"
+          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
           echo "Waiting for service to become stable..."
-          for i in $(seq 1 60); do
-            STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --region "$REGION" | jq -r '.Service.Status')
-            echo "Current status: $STATUS"
-            if [ "$STATUS" = "RUNNING" ]; then
-              echo "✅ Service is stable and running."
-              break
-            fi
-            if [ "$STATUS" = "CREATE_FAILED" ] || [ "$STATUS" = "DELETE_FAILED" ]; then
-              echo "❌ Service entered a failed state."
-              exit 1
-            fi
-            sleep 10
-          done
-
-      - name: Verify Deployed Image Tag
-        run: |
-          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
-          REGION="${{ vars.AWS_REGION }}"
-          EXPECTED="${{ needs.build-and-push.outputs.image-uri }}"
-
-          CURRENT=$(aws apprunner describe-service \
-            --service-arn "$SERVICE_ARN" \
-            --region "$REGION" \
-            | jq -r '.Service.SourceConfiguration.ImageRepository.ImageIdentifier')
-
-          echo "🔍 Expected Image: $EXPECTED"
-          echo "🔍 Deployed Image: $CURRENT"
-
-          if [ "$CURRENT" != "$EXPECTED" ]; then
-            echo "❌ Deployed image does not match expected tag. Failing job."
-            exit 1
-          fi
-
-          echo "✅ Deployed image matches expected tag."
+          aws apprunner wait service-stable --service-arn "$SERVICE_ARN"

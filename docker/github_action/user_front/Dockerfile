@@ -1,56 +1,29 @@
-# --- ビルドステージ ---
-FROM public.ecr.aws/docker/library/node:22-bullseye AS builder
+# Stage 1: Install production dependencies
+FROM node:20-slim AS deps
 WORKDIR /app
 
-# ルートの package.json とロックファイル
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+# Copy package.json and lock file
+COPY apps/user_front/package.json apps/user_front/package-lock.json* ./
 
-# 各ワークスペースの package.json
-COPY apps/user_front/package.json apps/user_front/
-# （migration 用スクリプトはコピー不要なので省略）
+# Install only production dependencies
+RUN npm install --omit=dev
 
-# Prisma スキーマだけビルドに必要ならコピー
-COPY packages/db/prisma/ ./packages/db/prisma/
-
-# 残りのソース
-COPY . .
-
-# 依存関係インストール＆Prisma Client 生成
-ENV npm_config_arch=x64
-ENV npm_config_platform=linux
-RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else npm install --workspaces; fi
-RUN npm rebuild
-RUN npx prisma generate
-
-# Next.js アプリをビルド
-RUN npm run build --workspace apps/user_front
-
-# --- プロダクションステージ ---
-FROM public.ecr.aws/docker/library/node:22-bullseye-slim AS runner
-
-# 非 root ユーザー
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
+# Stage 2: Create the production image
+FROM node:20-slim AS runner
 WORKDIR /app
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV HOSTNAME="0.0.0.0"
-ENV PORT=3000
 
-# Next.js ビルド成果物を配置
-# standalone の中身をコピー
-COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next/standalone/ ./
-# public と .next ディレクトリ全体をコピー
-COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next ./.next
+# Copy production dependencies from the 'deps' stage
+COPY --from=deps /app/node_modules ./node_modules
 
-# server.js をルートに移動してパスの不整合を解消
-RUN mv /app/apps/user_front/server.js /app/server.js
+# Copy the application's package.json
+COPY apps/user_front/package.json ./package.json
 
-# Prisma Client が参照するスキーマファイル
-COPY --from=builder /app/packages/db/prisma ./prisma/
+# Copy the pre-built application from the CI/CD runner context
+COPY apps/user_front/.next ./.next
+COPY apps/user_front/public ./public
 
-USER nextjs
+# Expose the port the app runs on
+EXPOSE 3000
 
-# アプリケーション起動
-CMD ["node", "server.js"]
+# The command to start the application
+CMD ["npm", "start"]
