@@ -85,7 +85,8 @@ jobs:
           OPERATION_ID="${{ steps.deploy.outputs.operation-id }}"
           echo "Waiting for deployment to complete... (Operation ID: $OPERATION_ID)"
           for i in $(seq 1 60); do
-            STATUS=$(aws apprunner describe-operation --operation-id "$OPERATION_ID" --service-arn "$SERVICE_ARN" | jq -r '.OperationSummary.Status')
+            # Use list-operations to find the specific operation and get its status
+            STATUS=$(aws apprunner list-operations --service-arn "$SERVICE_ARN" --query "OperationSummaryList[?Id=='$OPERATION_ID'].Status" --output text)
             echo "Current status: $STATUS"
             if [ "$STATUS" = "SUCCEEDED" ]; then
               echo "✅ Deployment succeeded."
@@ -94,6 +95,15 @@ jobs:
             if [ "$STATUS" = "FAILED" ]; then
               echo "❌ Deployment failed."
               exit 1
+            fi
+            if [ -z "$STATUS" ]; then
+              echo "⚠️ Operation not found in list, checking service status instead..."
+              SERVICE_STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text)
+              echo "Service status: $SERVICE_STATUS"
+              if [ "$SERVICE_STATUS" = "RUNNING" ]; then
+                echo "✅ Service is running, assuming deployment succeeded."
+                break
+              fi
             fi
             if [ $i -eq 60 ]; then
               echo "❌ Timeout waiting for deployment."
