@@ -153,6 +153,7 @@ jobs:
             --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
             --invocation-type RequestResponse \
             --payload '{}' \
+            --cli-read-timeout 300 \
             response.json
 
           # Check response
