@@ -70,14 +70,15 @@ jobs:
 
       - name: Deploy App Runner Service
         run: |
-          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
+          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
           IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
+          SOURCE_CONFIGURATION="{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}"
           aws apprunner start-deployment \
             --service-arn "$SERVICE_ARN" \
-            --source-configuration "{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}"
+            --source-configuration "$SOURCE_CONFIGURATION"
 
       - name: Wait for App Runner Service to Stabilize
         run: |
-          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
+          SERVICE_ARN="${{ vars.APPRUNNER_SERVICE_ARN }}"
           echo "Waiting for service to become stable..."
           aws apprunner wait service-stable --service-arn "$SERVICE_ARN"
