@@ -8,12 +8,15 @@ RUN apt-get update && apt-get install -y \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# package.jsonをコピー（最小限の依存関係のみ）
+# 必要なpackage.jsonファイルをコピー
 COPY packages/db/package.json ./packages/db/
 COPY packages/db/prisma ./packages/db/prisma/
 
-# Prisma関連の依存関係のみインストール
-RUN cd packages/db && npm install prisma @prisma/client
+# ルートレベルでpackage.jsonを作成（依存関係管理用）
+RUN echo '{"name": "migration-lambda", "version": "1.0.0", "dependencies": {"prisma": "latest", "@prisma/client": "latest"}}' > package.json
+
+# 依存関係をインストール
+RUN npm install prisma @prisma/client
 
 # TypeScript関連の依存関係をインストール
 RUN npm install -g typescript ts-node @types/node
@@ -21,8 +24,8 @@ RUN npm install -g typescript ts-node @types/node
 # マイグレーションスクリプトをコピー
 COPY apps/scripts/commands/run-migration.ts ./run-migration.ts
 
-# Prismaクライアントを生成
-RUN cd packages/db && npx prisma generate
+# Prismaクライアントを生成（ルートレベルで実行）
+RUN PRISMA_SCHEMA_PATH=./packages/db/prisma/schema.prisma npx prisma generate
 
 # 環境変数を設定
 ENV NODE_ENV=production

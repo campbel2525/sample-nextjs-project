@@ -23,7 +23,7 @@ async function runMigration() {
 
     // マイグレーションを実行
     console.log('⚡ Running prisma migrate deploy...')
-    execSync('cd packages/db && npx prisma migrate deploy', {
+    execSync('npx prisma migrate deploy --schema=./packages/db/prisma/schema.prisma', {
       stdio: 'inherit',
       env: {
         ...process.env,

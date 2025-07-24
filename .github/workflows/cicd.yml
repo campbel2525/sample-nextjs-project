@@ -149,23 +149,59 @@ jobs:
           done
 
           # Invoke migration
-          aws lambda invoke \
+          echo "🚀 Invoking Lambda function..."
+          INVOKE_RESULT=$(aws lambda invoke \
             --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
             --invocation-type RequestResponse \
             --payload '{}' \
             --cli-read-timeout 300 \
-            response.json
+            response.json 2>&1)
 
-          # Check response
-          echo "📋 Lambda response:"
-          cat response.json
-
-          if grep -q '"statusCode": 500' response.json; then
-            echo "❌ Migration failed"
+          # Check if invoke command itself failed
+          INVOKE_EXIT_CODE=$?
+          if [ $INVOKE_EXIT_CODE -ne 0 ]; then
+            echo "❌ Lambda invoke command failed with exit code: $INVOKE_EXIT_CODE"
+            echo "Error output: $INVOKE_RESULT"
             exit 1
           fi
 
-          echo "✅ Migration completed successfully"
+          # Check response file exists
+          if [ ! -f response.json ]; then
+            echo "❌ Response file not created"
+            exit 1
+          fi
+
+          # Display Lambda response
+          echo "📋 Lambda response:"
+          cat response.json
+
+          # Check for Lambda function errors (FunctionError field)
+          if grep -q '"FunctionError"' response.json; then
+            echo "❌ Lambda function execution error detected"
+            FUNCTION_ERROR=$(jq -r '.FunctionError // "Unknown"' response.json 2>/dev/null || echo "Unknown")
+            echo "Function Error Type: $FUNCTION_ERROR"
+            exit 1
+          fi
+
+          # Check for application-level errors (statusCode: 500)
+          if grep -q '"statusCode": 500' response.json; then
+            echo "❌ Migration failed with status code 500"
+            ERROR_MESSAGE=$(jq -r '.body | fromjson | .error // "Unknown error"' response.json 2>/dev/null || echo "Unknown error")
+            echo "Error message: $ERROR_MESSAGE"
+            exit 1
+          fi
+
+          # Check for successful status code
+          if grep -q '"statusCode": 200' response.json; then
+            echo "✅ Migration completed successfully"
+            SUCCESS_MESSAGE=$(jq -r '.body | fromjson | .message // "Migration completed"' response.json 2>/dev/null || echo "Migration completed")
+            echo "Success message: $SUCCESS_MESSAGE"
+          else
+            echo "⚠️ Unexpected response format or status code"
+            echo "Response content:"
+            cat response.json
+            exit 1
+          fi
 
   deploy-apprunner:
     environment: ${{ github.ref_name }}
