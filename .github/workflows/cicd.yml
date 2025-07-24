@@ -98,13 +98,21 @@ jobs:
           # Login to ECR
           aws ecr get-login-password --region ${{ vars.AWS_REGION }} | docker login --username AWS --password-stdin ${{ needs.build-and-push.outputs.registry }}
 
-          # Build migration image
-          MIGRATION_IMAGE="${{ needs.build-and-push.outputs.registry }}/${{ vars.MIGRATION_ECR_REPOSITORY_NAME }}:${{ github.sha }}"
-          docker build -t $MIGRATION_IMAGE -f docker/github_action/migration/Dockerfile .
-          docker push $MIGRATION_IMAGE
+          # Build migration image with SHA tag
+          MIGRATION_IMAGE_SHA="${{ needs.build-and-push.outputs.registry }}/${{ vars.MIGRATION_ECR_REPOSITORY_NAME }}:${{ github.sha }}"
+          MIGRATION_IMAGE_LATEST="${{ needs.build-and-push.outputs.registry }}/${{ vars.MIGRATION_ECR_REPOSITORY_NAME }}:latest"
 
-          echo "🔍 Migration image: $MIGRATION_IMAGE"
-          echo "migration-image=$MIGRATION_IMAGE" >> $GITHUB_OUTPUT
+          docker build -t $MIGRATION_IMAGE_SHA -f docker/github_action/migration/Dockerfile .
+
+          # Tag the same image with latest
+          docker tag $MIGRATION_IMAGE_SHA $MIGRATION_IMAGE_LATEST
+
+          # Push both tags
+          docker push $MIGRATION_IMAGE_SHA
+          docker push $MIGRATION_IMAGE_LATEST
+
+          echo "🔍 Pushed migration tags: ${{ github.sha }}, latest"
+          echo "migration-image=$MIGRATION_IMAGE_SHA" >> $GITHUB_OUTPUT
         id: migration-build
 
       - name: Update & Invoke Migration Lambda
