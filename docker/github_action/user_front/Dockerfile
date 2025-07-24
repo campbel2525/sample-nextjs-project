@@ -48,23 +48,16 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next/standalone/
 COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next/static ./.next/static
 
+# .nextディレクトリ全体をコピー（ビルドIDなどの重要なファイルを含む）
+COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next ./.next
+
 # Prisma Client が参照するスキーマファイル
 COPY --from=builder --chown=nextjs:nodejs /app/packages/db/prisma ./prisma/
 
-# server.jsの場所を確認し、適切な場所に配置
-RUN if [ -f "/app/apps/user_front/server.js" ]; then \
-    echo "Found server.js in apps/user_front/"; \
-    cp /app/apps/user_front/server.js /app/server.js; \
-    elif [ -f "/app/server.js" ]; then \
-    echo "server.js already in root"; \
-    else \
-    echo "server.js not found, creating fallback"; \
-    echo 'const { createServer } = require("http"); const { parse } = require("url"); const next = require("next"); const dev = process.env.NODE_ENV !== "production"; const app = next({ dev }); const handle = app.getRequestHandler(); app.prepare().then(() => { createServer((req, res) => { const parsedUrl = parse(req.url, true); handle(req, res, parsedUrl); }).listen(3000, (err) => { if (err) throw err; console.log("> Ready on http://localhost:3000"); }); });' > /app/server.js; \
-    fi
-
 # ファイル構造を確認
 RUN ls -la /app/
-RUN cat /app/server.js | head -5
+RUN ls -la /app/.next/
+RUN test -f /app/.next/BUILD_ID && echo "BUILD_ID found" || echo "BUILD_ID missing"
 
 USER nextjs
 

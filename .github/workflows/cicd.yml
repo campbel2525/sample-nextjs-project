@@ -87,17 +87,63 @@ jobs:
 
       - name: Update Lambda from ECR Image
         run: |
+          echo "🔍 Updating Lambda function: ${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}"
+          echo "🔍 Using image: ${{ needs.build-and-push.outputs.image-uri }}"
+
           aws lambda update-function-code \
             --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
             --image-uri     "${{ needs.build-and-push.outputs.image-uri }}"
 
+          echo "✅ Lambda function updated successfully"
+
+      - name: Wait for Lambda Update
+        run: |
+          echo "⏳ Waiting for Lambda function to be ready..."
+
+          for i in $(seq 1 30); do
+            STATE=$(aws lambda get-function --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" --query 'Configuration.State' --output text)
+            echo "Current state: $STATE"
+
+            if [ "$STATE" = "Active" ]; then
+              echo "✅ Lambda function is ready"
+              break
+            fi
+
+            if [ "$STATE" = "Failed" ]; then
+              echo "❌ Lambda function update failed"
+              exit 1
+            fi
+
+            if [ $i -eq 30 ]; then
+              echo "❌ Timeout waiting for Lambda function to be ready"
+              exit 1
+            fi
+
+            sleep 10
+          done
+
       - name: Invoke Migrations Lambda
         run: |
+          echo "🚀 Invoking migration Lambda function..."
+
+          # 同期実行でレスポンスを取得
           aws lambda invoke \
             --function-name "${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
-            --invocation-type Event \
+            --invocation-type RequestResponse \
             --payload '{}' \
-            /dev/stdout
+            response.json
+
+          # レスポンスを表示
+          echo "📋 Lambda response:"
+          cat response.json
+
+          # エラーチェック
+          if grep -q '"statusCode": 500' response.json; then
+            echo "❌ Migration failed"
+            exit 1
+          fi
+
+          echo "✅ Migration completed successfully"
 
   deploy-apprunner:
     environment: ${{ github.ref_name }}

@@ -2,7 +2,8 @@
   "name": "scripts",
   "version": "1.0.0",
   "scripts": {
-    "seed": "ts-node commands/run-seed.ts"
+    "seed": "ts-node commands/run-seed.ts",
+    "migrate": "ts-node commands/run-migration.ts"
   },
   "dependencies": {
     "@my-monorepo/db": "*",
