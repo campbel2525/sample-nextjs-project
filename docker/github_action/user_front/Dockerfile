@@ -25,6 +25,11 @@ RUN npx prisma generate
 # Next.js アプリをビルド
 RUN npm run build --workspace apps/user_front
 
+# デバッグ: ビルド後のファイル構造を確認
+RUN ls -la /app/apps/user_front/.next/
+RUN ls -la /app/apps/user_front/.next/standalone/ || echo "standalone directory not found"
+RUN find /app/apps/user_front/.next -name "server.js" -type f 2>/dev/null || echo "server.js not found in .next"
+
 # --- プロダクションステージ ---
 FROM public.ecr.aws/docker/library/node:22-bullseye-slim AS runner
 
@@ -45,6 +50,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next/static ./.n
 
 # Prisma Client が参照するスキーマファイル
 COPY --from=builder --chown=nextjs:nodejs /app/packages/db/prisma ./prisma/
+
+# デバッグ: ファイル構造を確認
+RUN ls -la /app/
+RUN find /app -name "server.js" -type f 2>/dev/null || echo "server.js not found"
 
 USER nextjs
 
