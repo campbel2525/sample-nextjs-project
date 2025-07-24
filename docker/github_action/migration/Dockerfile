@@ -25,7 +25,7 @@ RUN npm install -g typescript ts-node @types/node
 COPY apps/scripts/commands/run-migration.ts ./run-migration.ts
 
 # Prismaクライアントを生成（ルートレベルで実行）
-RUN PRISMA_SCHEMA_PATH=./packages/db/prisma/schema.prisma npx prisma generate
+RUN npx prisma generate --schema=./packages/db/prisma/schema.prisma
 
 # 環境変数を設定
 ENV NODE_ENV=production
