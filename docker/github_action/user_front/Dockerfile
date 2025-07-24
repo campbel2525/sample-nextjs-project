@@ -51,13 +51,24 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/user_front/.next/static ./.n
 # Prisma Client が参照するスキーマファイル
 COPY --from=builder --chown=nextjs:nodejs /app/packages/db/prisma ./prisma/
 
-# デバッグ: ファイル構造を確認
+# server.jsの場所を確認し、適切な場所に配置
+RUN if [ -f "/app/apps/user_front/server.js" ]; then \
+    echo "Found server.js in apps/user_front/"; \
+    cp /app/apps/user_front/server.js /app/server.js; \
+    elif [ -f "/app/server.js" ]; then \
+    echo "server.js already in root"; \
+    else \
+    echo "server.js not found, creating fallback"; \
+    echo 'const { createServer } = require("http"); const { parse } = require("url"); const next = require("next"); const dev = process.env.NODE_ENV !== "production"; const app = next({ dev }); const handle = app.getRequestHandler(); app.prepare().then(() => { createServer((req, res) => { const parsedUrl = parse(req.url, true); handle(req, res, parsedUrl); }).listen(3000, (err) => { if (err) throw err; console.log("> Ready on http://localhost:3000"); }); });' > /app/server.js; \
+    fi
+
+# ファイル構造を確認
 RUN ls -la /app/
-RUN find /app -name "server.js" -type f 2>/dev/null || echo "server.js not found"
+RUN cat /app/server.js | head -5
 
 USER nextjs
 
 EXPOSE 3000
 
-# アプリケーション起動（standaloneビルドのserver.jsを直接実行）
+# アプリケーション起動
 CMD ["node", "server.js"]
