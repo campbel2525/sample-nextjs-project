@@ -92,15 +92,17 @@ jobs:
           SOURCE_CONFIGURATION="{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}"
           echo "🔍 SOURCE_CONFIGURATION: $SOURCE_CONFIGURATION"
 
-          OPERATION_ID=$(aws apprunner start-deployment \
+          # Update the service with new image
+          OPERATION_ID=$(aws apprunner update-service \
             --service-arn "$SERVICE_ARN" \
-            --source-configuration "$SOURCE_CONFIGURATION" | jq -r '.OperationId')
+            --source-configuration "$SOURCE_CONFIGURATION" \
+            --query 'OperationId' --output text)
 
           echo "🔍 OPERATION_ID: $OPERATION_ID"
 
           # Validate operation ID
           if [ -z "$OPERATION_ID" ] || [ "$OPERATION_ID" = "null" ]; then
-            echo "❌ Failed to get OPERATION_ID from start-deployment command."
+            echo "❌ Failed to get OPERATION_ID from update-service command."
             exit 1
           fi
 
