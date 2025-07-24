@@ -15,12 +15,11 @@ COPY packages/db/prisma ./packages/db/prisma/
 # Prisma関連の依存関係のみインストール
 RUN cd packages/db && npm install prisma @prisma/client
 
+# TypeScript関連の依存関係をインストール
+RUN npm install -g typescript ts-node @types/node
+
 # マイグレーションスクリプトをコピー
 COPY apps/scripts/commands/run-migration.ts ./run-migration.ts
-
-# TypeScriptをJavaScriptにコンパイル
-RUN npm install -g typescript ts-node
-RUN tsc run-migration.ts --target es2020 --module commonjs --esModuleInterop --skipLibCheck
 
 # Prismaクライアントを生成
 RUN cd packages/db && npx prisma generate
@@ -29,5 +28,5 @@ RUN cd packages/db && npx prisma generate
 ENV NODE_ENV=production
 ENV DATABASE_URL=""
 
-# Lambda handler用のエントリーポイント
-CMD ["node", "run-migration.js"]
+# Lambda handler用のエントリーポイント（ts-nodeで直接実行）
+CMD ["npx", "ts-node", "run-migration.ts"]
