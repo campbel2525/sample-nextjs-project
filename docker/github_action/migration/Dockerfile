@@ -6,6 +6,15 @@ WORKDIR /app
 # 必要なパッケージのみインストール
 RUN apt-get update && apt-get install -y \
     openssl \
+    cmake \
+    build-essential \
+    autotools-dev \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    python3 \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 必要なpackage.jsonファイルをコピー
