@@ -12,6 +12,17 @@ permissions:
   contents: read
 
 jobs:
+
+  setup-environment:
+    name: 🚧 Build & Push to ECR
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+    steps:
+      - name: Login to ECR
+        id: login
+        uses: aws-actions/amazon-ecr-login@v2
+
+
   # build-and-push:
   #   environment: ${{ github.ref_name }}
   #   name: 🚧 Build & Push to ECR
@@ -46,10 +57,6 @@ jobs:
   #         role-to-assume: ${{ vars.IAM_ROLE }}
   #         aws-region:     ${{ vars.AWS_REGION }}
 
-  #     - name: Login to ECR
-  #       id: login
-  #       uses: aws-actions/amazon-ecr-login@v2
-
   #     - name: Build & Push Docker Image
   #       id: push
   #       run: |
@@ -76,7 +83,7 @@ jobs:
   run-migrations:
     environment: ${{ github.ref_name }}
     name: 🛠 Run Database Migrations
-    # needs: build-and-push
+    needs: setup-environment
     runs-on: ubuntu-latest
 
     steps:
