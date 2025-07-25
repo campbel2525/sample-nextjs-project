@@ -175,11 +175,40 @@ jobs:
           echo "📋 Lambda response:"
           cat response.json
 
-          # Check for Lambda function errors (FunctionError field)
-          if grep -q '"FunctionError"' response.json; then
+          # Check for Lambda function errors (FunctionError field or errorType)
+          if grep -q '"FunctionError"' response.json || grep -q '"errorType"' response.json; then
             echo "❌ Lambda function execution error detected"
+
+            # Extract error details
             FUNCTION_ERROR=$(jq -r '.FunctionError // "Unknown"' response.json 2>/dev/null || echo "Unknown")
+            ERROR_TYPE=$(jq -r '.errorType // "Unknown"' response.json 2>/dev/null || echo "Unknown")
+            ERROR_MESSAGE=$(jq -r '.errorMessage // "Unknown"' response.json 2>/dev/null || echo "Unknown")
+
             echo "Function Error Type: $FUNCTION_ERROR"
+            echo "Error Type: $ERROR_TYPE"
+            echo "Error Message: $ERROR_MESSAGE"
+
+            # Get CloudWatch logs for more details
+            echo "🔍 Fetching recent CloudWatch logs..."
+            aws logs describe-log-streams \
+              --log-group-name "/aws/lambda/${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
+              --order-by LastEventTime \
+              --descending \
+              --max-items 1 \
+              --query 'logStreams[0].logStreamName' \
+              --output text > latest_log_stream.txt
+
+            if [ -s latest_log_stream.txt ]; then
+              LATEST_STREAM=$(cat latest_log_stream.txt)
+              echo "📋 Recent CloudWatch logs from stream: $LATEST_STREAM"
+              aws logs get-log-events \
+                --log-group-name "/aws/lambda/${{ vars.MIGRATION_LAMBDA_FUNCTION_NAME }}" \
+                --log-stream-name "$LATEST_STREAM" \
+                --start-time $(date -d '5 minutes ago' +%s)000 \
+                --query 'events[*].message' \
+                --output text || echo "Could not fetch logs"
+            fi
+
             exit 1
           fi
 
@@ -203,124 +232,124 @@ jobs:
             exit 1
           fi
 
-  deploy-apprunner:
-    environment: ${{ github.ref_name }}
-    name: 🚀 Deploy to App Runner via AWS CLI
-    needs: [build-and-push, run-migrations]
-    runs-on: ubuntu-latest
+  # deploy-apprunner:
+  #   environment: ${{ github.ref_name }}
+  #   name: 🚀 Deploy to App Runner via AWS CLI
+  #   needs: [build-and-push, run-migrations]
+  #   runs-on: ubuntu-latest
 
-    steps:
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.IAM_ROLE }}
-          aws-region:     ${{ vars.AWS_REGION }}
+  #   steps:
+  #     - name: Configure AWS Credentials
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ vars.IAM_ROLE }}
+  #         aws-region:     ${{ vars.AWS_REGION }}
 
-      - name: Deploy App Runner Service
-        id: deploy
-        run: |
-          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
-          IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
+  #     - name: Deploy App Runner Service
+  #       id: deploy
+  #       run: |
+  #         SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
+  #         IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
 
-          # Debug output
-          echo "🔍 SERVICE_ARN: $SERVICE_ARN"
-          echo "🔍 IMAGE_URI: $IMAGE_URI"
+  #         # Debug output
+  #         echo "🔍 SERVICE_ARN: $SERVICE_ARN"
+  #         echo "🔍 IMAGE_URI: $IMAGE_URI"
 
-          # Validate required variables
-          if [ -z "$SERVICE_ARN" ]; then
-            echo "❌ SERVICE_ARN is empty. Please check the USER_FRONT_APPRUNNER_ARN variable in your environment."
-            exit 1
-          fi
+  #         # Validate required variables
+  #         if [ -z "$SERVICE_ARN" ]; then
+  #           echo "❌ SERVICE_ARN is empty. Please check the USER_FRONT_APPRUNNER_ARN variable in your environment."
+  #           exit 1
+  #         fi
 
-          if [ -z "$IMAGE_URI" ]; then
-            echo "❌ IMAGE_URI is empty. Please check the previous build step."
-            exit 1
-          fi
+  #         if [ -z "$IMAGE_URI" ]; then
+  #           echo "❌ IMAGE_URI is empty. Please check the previous build step."
+  #           exit 1
+  #         fi
 
-          SOURCE_CONFIGURATION="{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}"
-          echo "🔍 SOURCE_CONFIGURATION: $SOURCE_CONFIGURATION"
+  #         SOURCE_CONFIGURATION="{\"ImageRepository\":{\"ImageIdentifier\":\"$IMAGE_URI\",\"ImageRepositoryType\":\"ECR\"}}"
+  #         echo "🔍 SOURCE_CONFIGURATION: $SOURCE_CONFIGURATION"
 
-          # Update the service with new image
-          OPERATION_ID=$(aws apprunner update-service \
-            --service-arn "$SERVICE_ARN" \
-            --source-configuration "$SOURCE_CONFIGURATION" \
-            --query 'OperationId' --output text)
+  #         # Update the service with new image
+  #         OPERATION_ID=$(aws apprunner update-service \
+  #           --service-arn "$SERVICE_ARN" \
+  #           --source-configuration "$SOURCE_CONFIGURATION" \
+  #           --query 'OperationId' --output text)
 
-          echo "🔍 OPERATION_ID: $OPERATION_ID"
+  #         echo "🔍 OPERATION_ID: $OPERATION_ID"
 
-          # Validate operation ID
-          if [ -z "$OPERATION_ID" ] || [ "$OPERATION_ID" = "null" ]; then
-            echo "❌ Failed to get OPERATION_ID from update-service command."
-            exit 1
-          fi
+  #         # Validate operation ID
+  #         if [ -z "$OPERATION_ID" ] || [ "$OPERATION_ID" = "null" ]; then
+  #           echo "❌ Failed to get OPERATION_ID from update-service command."
+  #           exit 1
+  #         fi
 
-          echo "operation-id=$OPERATION_ID" >> $GITHUB_OUTPUT
+  #         echo "operation-id=$OPERATION_ID" >> $GITHUB_OUTPUT
 
-      - name: Wait for App Runner Deployment
-        run: |
-          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
-          OPERATION_ID="${{ steps.deploy.outputs.operation-id }}"
+  #     - name: Wait for App Runner Deployment
+  #       run: |
+  #         SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
+  #         OPERATION_ID="${{ steps.deploy.outputs.operation-id }}"
 
-          echo "Waiting for deployment to complete... (Operation ID: $OPERATION_ID)"
+  #         echo "Waiting for deployment to complete... (Operation ID: $OPERATION_ID)"
 
-          # Wait for deployment to complete
-          for i in $(seq 1 60); do
-            # Check service status
-            SERVICE_STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text)
-            echo "Current service status: $SERVICE_STATUS"
+  #         # Wait for deployment to complete
+  #         for i in $(seq 1 60); do
+  #           # Check service status
+  #           SERVICE_STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text)
+  #           echo "Current service status: $SERVICE_STATUS"
 
-            if [ "$SERVICE_STATUS" = "RUNNING" ]; then
-              echo "✅ Service is running."
+  #           if [ "$SERVICE_STATUS" = "RUNNING" ]; then
+  #             echo "✅ Service is running."
 
-              # Additional check: verify the service is actually healthy
-              sleep 30  # Wait a bit for the service to fully start
+  #             # Additional check: verify the service is actually healthy
+  #             sleep 30  # Wait a bit for the service to fully start
 
-              # Check service status again after waiting
-              FINAL_STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text)
-              echo "Final service status: $FINAL_STATUS"
+  #             # Check service status again after waiting
+  #             FINAL_STATUS=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.Status' --output text)
+  #             echo "Final service status: $FINAL_STATUS"
 
-              if [ "$FINAL_STATUS" = "RUNNING" ]; then
-                echo "✅ Deployment succeeded and service is stable."
-                break
-              else
-                echo "❌ Service became unstable after initial success."
-                exit 1
-              fi
-            fi
+  #             if [ "$FINAL_STATUS" = "RUNNING" ]; then
+  #               echo "✅ Deployment succeeded and service is stable."
+  #               break
+  #             else
+  #               echo "❌ Service became unstable after initial success."
+  #               exit 1
+  #             fi
+  #           fi
 
-            if [ "$SERVICE_STATUS" = "CREATE_FAILED" ] || [ "$SERVICE_STATUS" = "UPDATE_FAILED" ] || [ "$SERVICE_STATUS" = "DELETE_FAILED" ]; then
-              echo "❌ Deployment failed with status: $SERVICE_STATUS"
+  #           if [ "$SERVICE_STATUS" = "CREATE_FAILED" ] || [ "$SERVICE_STATUS" = "UPDATE_FAILED" ] || [ "$SERVICE_STATUS" = "DELETE_FAILED" ]; then
+  #             echo "❌ Deployment failed with status: $SERVICE_STATUS"
 
-              # Get more detailed error information
-              aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.ServiceUrl' --output text || echo "No service URL available"
+  #             # Get more detailed error information
+  #             aws apprunner describe-service --service-arn "$SERVICE_ARN" --query 'Service.ServiceUrl' --output text || echo "No service URL available"
 
-              exit 1
-            fi
+  #             exit 1
+  #           fi
 
-            if [ $i -eq 60 ]; then
-              echo "❌ Timeout waiting for deployment. Final status: $SERVICE_STATUS"
-              exit 1
-            fi
+  #           if [ $i -eq 60 ]; then
+  #             echo "❌ Timeout waiting for deployment. Final status: $SERVICE_STATUS"
+  #             exit 1
+  #           fi
 
-            sleep 10
-          done
+  #           sleep 10
+  #         done
 
-      - name: Verify Deployed Image
-        run: |
-          SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
-          EXPECTED_IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
+  #     - name: Verify Deployed Image
+  #       run: |
+  #         SERVICE_ARN="${{ vars.USER_FRONT_APPRUNNER_ARN }}"
+  #         EXPECTED_IMAGE_URI="${{ needs.build-and-push.outputs.image-uri }}"
 
-          # Give a few seconds for describe-service to reflect the new image
-          sleep 5
+  #         # Give a few seconds for describe-service to reflect the new image
+  #         sleep 5
 
-          CURRENT_IMAGE_URI=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" | jq -r '.Service.SourceConfiguration.ImageRepository.ImageIdentifier')
+  #         CURRENT_IMAGE_URI=$(aws apprunner describe-service --service-arn "$SERVICE_ARN" | jq -r '.Service.SourceConfiguration.ImageRepository.ImageIdentifier')
 
-          echo "🔍 Expected Image: $EXPECTED_IMAGE_URI"
-          echo "🔍 Deployed Image: $CURRENT_IMAGE_URI"
+  #         echo "🔍 Expected Image: $EXPECTED_IMAGE_URI"
+  #         echo "🔍 Deployed Image: $CURRENT_IMAGE_URI"
 
-          if [ "$CURRENT_IMAGE_URI" != "$EXPECTED_IMAGE_URI" ]; then
-            echo "❌ Deployed image does not match expected tag. Failing job."
-            exit 1
-          fi
+  #         if [ "$CURRENT_IMAGE_URI" != "$EXPECTED_IMAGE_URI" ]; then
+  #           echo "❌ Deployed image does not match expected tag. Failing job."
+  #           exit 1
+  #         fi
 
-          echo "✅ Deployed image matches expected tag."
+  #         echo "✅ Deployed image matches expected tag."
