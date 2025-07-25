@@ -276,7 +276,12 @@ jobs:
   # deploy-app-runner:
   #   environment: ${{ github.ref_name }}
   #   name: 🚀 Deploy to App Runner
-  #   needs: [setup, build-push-user-front, run-migration]
+  #   needs: [
+  #     setup,
+  #     build-push-user-front,
+  #     build-push-migration,
+  #     run-migration
+  #   ]
   #   runs-on: ubuntu-latest
 
   #   steps:

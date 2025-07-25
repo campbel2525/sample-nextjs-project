@@ -21,6 +21,9 @@ RUN npm install prisma @prisma/client
 # TypeScript関連の依存関係をインストール
 RUN npm install -g typescript ts-node @types/node
 
+# Lambda Runtime Interface Clientをインストール
+RUN npm install -g aws-lambda-ric
+
 # マイグレーションスクリプトをコピー
 COPY apps/scripts/commands/run-migration.ts ./run-migration.ts
 
@@ -31,5 +34,5 @@ RUN npx prisma generate --schema=./packages/db/prisma/schema.prisma
 ENV NODE_ENV=production
 # ENV DATABASE_URL=""
 
-# Lambda handler用のエントリーポイント（ts-nodeで直接実行）
-CMD ["npx", "ts-node", "run-migration.ts"]
+# Lambda Runtime Interface Clientを使用してhandler関数を実行
+CMD ["npx", "aws-lambda-ric", "npx", "ts-node", "run-migration.ts"]
