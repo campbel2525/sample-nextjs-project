@@ -36,9 +36,6 @@ RUN npm install -g aws-lambda-ric
 # マイグレーションスクリプトをコピー
 COPY apps/scripts/commands/run-migration.ts ./run-migration.ts
 
-# TypeScriptをJavaScriptにコンパイル
-RUN npx tsc run-migration.ts --target es2020 --module commonjs --esModuleInterop --allowSyntheticDefaultImports --skipLibCheck
-
 # Prismaクライアントを生成（ルートレベルで実行）
 RUN npx prisma generate --schema=./packages/db/prisma/schema.prisma
 
@@ -46,5 +43,5 @@ RUN npx prisma generate --schema=./packages/db/prisma/schema.prisma
 ENV NODE_ENV=production
 # ENV DATABASE_URL=""
 
-# Lambda Runtime Interface Clientを使用してhandler関数を実行
-CMD ["npx", "aws-lambda-ric", "run-migration.handler"]
+# Lambda Runtime Interface Clientを使用してTypeScriptファイルを直接実行
+CMD ["npx", "aws-lambda-ric", "npx", "ts-node", "--esm", "run-migration.ts"]
