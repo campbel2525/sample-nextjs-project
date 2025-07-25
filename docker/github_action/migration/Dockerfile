@@ -29,7 +29,7 @@ RUN npx prisma generate --schema=./packages/db/prisma/schema.prisma
 
 # 環境変数を設定
 ENV NODE_ENV=production
-ENV DATABASE_URL=""
+# ENV DATABASE_URL=""
 
 # Lambda handler用のエントリーポイント（ts-nodeで直接実行）
 CMD ["npx", "ts-node", "run-migration.ts"]
