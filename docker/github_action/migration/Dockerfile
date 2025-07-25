@@ -22,19 +22,22 @@ COPY packages/db/package.json ./packages/db/
 COPY packages/db/prisma ./packages/db/prisma/
 
 # ルートレベルでpackage.jsonを作成（依存関係管理用）
-RUN echo '{"name": "migration-lambda", "version": "1.0.0", "dependencies": {"prisma": "latest", "@prisma/client": "latest"}}' > package.json
+RUN echo '{"name": "migration-lambda", "version": "1.0.0", "dependencies": {"prisma": "latest", "@prisma/client": "latest"}, "devDependencies": {"@types/node": "latest", "typescript": "latest"}}' > package.json
 
 # 依存関係をインストール
-RUN npm install prisma @prisma/client
+RUN npm install prisma @prisma/client @types/node typescript
 
-# TypeScript関連の依存関係をインストール
-RUN npm install -g typescript ts-node @types/node
+# TypeScript関連の依存関係をグローバルインストール
+RUN npm install -g ts-node
 
 # Lambda Runtime Interface Clientをインストール
 RUN npm install -g aws-lambda-ric
 
 # マイグレーションスクリプトをコピー
 COPY apps/scripts/commands/run-migration.ts ./run-migration.ts
+
+# TypeScriptをJavaScriptにコンパイル
+RUN npx tsc run-migration.ts --target es2020 --module commonjs --esModuleInterop --allowSyntheticDefaultImports --skipLibCheck
 
 # Prismaクライアントを生成（ルートレベルで実行）
 RUN npx prisma generate --schema=./packages/db/prisma/schema.prisma
@@ -44,4 +47,4 @@ ENV NODE_ENV=production
 # ENV DATABASE_URL=""
 
 # Lambda Runtime Interface Clientを使用してhandler関数を実行
-CMD ["npx", "aws-lambda-ric", "npx", "ts-node", "run-migration.ts"]
+CMD ["npx", "aws-lambda-ric", "run-migration.handler"]
