@@ -12,71 +12,71 @@ permissions:
   contents: read
 
 jobs:
-  build-and-push:
-    environment: ${{ github.ref_name }}
-    name: 🚧 Build & Push to ECR
-    runs-on: ubuntu-latest
-    outputs:
-      image-uri: ${{ steps.push.outputs.image-uri }}
-      registry: ${{ steps.login.outputs.registry }}
+  # build-and-push:
+  #   environment: ${{ github.ref_name }}
+  #   name: 🚧 Build & Push to ECR
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     image-uri: ${{ steps.push.outputs.image-uri }}
+  #     registry: ${{ steps.login.outputs.registry }}
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '22'
 
-      - name: Install root & workspaces
-        run: npm install --workspaces
+  #     - name: Install root & workspaces
+  #       run: npm install --workspaces
 
-      - name: Install user_front dependencies
-        run: npm --workspace=apps/user_front install
+  #     - name: Install user_front dependencies
+  #       run: npm --workspace=apps/user_front install
 
-      - name: Build user_front
-        run: npm --workspace=apps/user_front run build
+  #     - name: Build user_front
+  #       run: npm --workspace=apps/user_front run build
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.IAM_ROLE }}
-          aws-region:     ${{ vars.AWS_REGION }}
+  #     - name: Configure AWS Credentials
+  #       uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ vars.IAM_ROLE }}
+  #         aws-region:     ${{ vars.AWS_REGION }}
 
-      - name: Login to ECR
-        id: login
-        uses: aws-actions/amazon-ecr-login@v2
+  #     - name: Login to ECR
+  #       id: login
+  #       uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build & Push Docker Image
-        id: push
-        run: |
-          IMAGE_TAG=${{ github.sha }}
-          REGISTRY=${{ steps.login.outputs.registry }}
-          REPO_NAME=${{ vars.USER_FRONT_ECR_REPOSITORY_NAME }}
+  #     - name: Build & Push Docker Image
+  #       id: push
+  #       run: |
+  #         IMAGE_TAG=${{ github.sha }}
+  #         REGISTRY=${{ steps.login.outputs.registry }}
+  #         REPO_NAME=${{ vars.USER_FRONT_ECR_REPOSITORY_NAME }}
 
-          # Build image with SHA tag
-          URI_SHA=${REGISTRY}/${REPO_NAME}:${IMAGE_TAG}
-          URI_LATEST=${REGISTRY}/${REPO_NAME}:latest
+  #         # Build image with SHA tag
+  #         URI_SHA=${REGISTRY}/${REPO_NAME}:${IMAGE_TAG}
+  #         URI_LATEST=${REGISTRY}/${REPO_NAME}:latest
 
-          docker build -t $URI_SHA -f docker/github_action/user_front/Dockerfile .
+  #         docker build -t $URI_SHA -f docker/github_action/user_front/Dockerfile .
 
-          # Tag the same image with latest
-          docker tag $URI_SHA $URI_LATEST
+  #         # Tag the same image with latest
+  #         docker tag $URI_SHA $URI_LATEST
 
-          # Push both tags
-          docker push $URI_SHA
-          docker push $URI_LATEST
+  #         # Push both tags
+  #         docker push $URI_SHA
+  #         docker push $URI_LATEST
 
-          echo "🔍 Pushed tags: $IMAGE_TAG, latest"
-          echo "image-uri=$URI_SHA" >> $GITHUB_OUTPUT
+  #         echo "🔍 Pushed tags: $IMAGE_TAG, latest"
+  #         echo "image-uri=$URI_SHA" >> $GITHUB_OUTPUT
 
   run-migrations:
     environment: ${{ github.ref_name }}
     name: 🛠 Run Database Migrations
-    needs: build-and-push
+    # needs: build-and-push
     runs-on: ubuntu-latest
 
     steps:
