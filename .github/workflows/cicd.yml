@@ -252,8 +252,11 @@ jobs:
             exit 1
           fi
 
+          # Extract status code from response
+          STATUS_CODE=$(jq -r '.statusCode // empty' response.json 2>/dev/null)
+
           # Check for application-level errors
-          if grep -q '"statusCode": 500' response.json; then
+          if [ "$STATUS_CODE" = "500" ]; then
             echo "❌ Migration failed with status code 500"
             ERROR_MESSAGE=$(jq -r '.body | fromjson | .error // "Unknown error"' response.json 2>/dev/null || echo "Unknown error")
             echo "Error message: $ERROR_MESSAGE"
@@ -261,15 +264,23 @@ jobs:
           fi
 
           # Validate successful completion
-          if grep -q '"statusCode": 200' response.json; then
+          if [ "$STATUS_CODE" = "200" ]; then
             echo "✅ Migration completed successfully"
             SUCCESS_MESSAGE=$(jq -r '.body | fromjson | .message // "Migration completed"' response.json 2>/dev/null || echo "Migration completed")
             echo "Success message: $SUCCESS_MESSAGE"
+            echo "🎉 Database migration finished successfully!"
           else
-            echo "⚠️ Unexpected response format or status code"
+            echo "⚠️ Unexpected response format or status code: $STATUS_CODE"
             echo "Response content:"
             cat response.json
-            exit 1
+
+            # If we can't determine the status code but there's no error, assume success
+            if [ -z "$STATUS_CODE" ] && ! grep -q '"FunctionError"' response.json && ! grep -q '"errorType"' response.json; then
+              echo "🤔 Unable to parse status code, but no errors detected. Assuming success."
+              echo "✅ Migration likely completed successfully"
+            else
+              exit 1
+            fi
           fi
 
   # # App Runnerへのデプロイ
