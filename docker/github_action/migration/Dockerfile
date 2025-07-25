@@ -44,4 +44,4 @@ ENV NODE_ENV=production
 # ENV DATABASE_URL=""
 
 # Lambda Runtime Interface Clientを使用してTypeScriptファイルを直接実行
-CMD ["npx", "aws-lambda-ric", "npx", "ts-node", "--esm", "run-migration.ts"]
+CMD ["npx", "aws-lambda-ric", "npx", "ts-node", "run-migration.ts"]
