@@ -89,27 +89,21 @@ export const authOptions: NextAuthOptions = {
     },
   },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
-      // 初回ログイン時
+    async jwt({ token, user }) {
+      // 初回ログイン時にユーザー情報をトークンに設定
       if (user) {
         token.id = user.id
         token.name = user.name
         token.email = user.email
       }
 
-      // セッション更新時 (例: プロフィール更新後)
-      if (trigger === 'update' && session) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        token.name = session.user.name
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        token.email = session.user.email
-      }
-
-      // DBから最新のユーザー情報を取得してトークンを更新
+      // セッションが要求されるたびにDBから最新のユーザー情報を取得してトークンを更新
       if (token.id) {
         const dbUser = await prisma[NEXT_AUTH_CONFIG.userModel].findUnique({
           where: { [NEXT_AUTH_CONFIG.fields.id]: parseInt(token.id) },
         })
+
+        // ユーザーが存在する場合、トークンを最新情報で更新
         if (dbUser) {
           token.name = dbUser[NEXT_AUTH_CONFIG.fields.name]
           token.email = dbUser[NEXT_AUTH_CONFIG.fields.email]

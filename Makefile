@@ -49,8 +49,6 @@ reset: ## DBのリセット
 	docker compose -f $(pf) -p $(pn) exec -it migration npx prisma migrate dev
 	docker compose -f $(pf) -p $(pn) exec -it migration npm run seed -w migration
 
-# migrate: ## マイグレート
-
 install: ## インストール
 	docker compose -f $(pf) -p $(pn) exec -it migration npm install
 	docker compose -f $(pf) -p $(pn) exec -it migration npx prisma generate
