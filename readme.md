@@ -1,5 +1,3 @@
-# cicd周りはまだWIPです
-
 # Sample Next.js Monorepo Project
 
 このプロジェクトは、Next.jsとPrismaを使用したモノレポ構成のサンプルです。
