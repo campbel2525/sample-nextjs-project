@@ -1,6 +1,6 @@
 # 補足
 
-Terraform のプロジェクト[[sample-nextjs-project](https://github.com/campbel2525/sample-nextjs-project/)](https://github.com/campbel2525/sample-apprunner-terraform/edit/main/README.md)と合わせて使用すると next.js のアプリケーション、インフラ周りが完了します
+Terraform のプロジェクト[sample-apprunner-terraform](https://github.com/campbel2525/sample-apprunner-terraform/)と合わせて使用すると next.js のアプリケーション、インフラ周りが完了します
 
 # Sample Next.js Monorepo Project
 
