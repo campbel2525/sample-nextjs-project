@@ -1,3 +1,6 @@
+[english version](https://github.com/campbel2525/sample-nextjs-project/blob/main/README-ENGLISH.md)
+
+
 # 補足
 
 Terraform のプロジェクト[sample-apprunner-terraform](https://github.com/campbel2525/sample-apprunner-terraform/)と合わせて使用すると next.js のアプリケーション、インフラ周りが完了します
