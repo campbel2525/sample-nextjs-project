@@ -1,4 +1,4 @@
-[english version](https://github.com/campbel2525/sample-projects/blob/main/002_nextjs_project/README-ENGLISH.md)
+[English README](https://github.com/campbel2525/sample-projects/blob/main/002_nextjs_project/README-ENGLISH.md)
 
 
 # 補足
